@@ -1,0 +1,32 @@
+# ── Secrets (NEVER commit) ───────────────────────────────
+.env
+**/.env
+backend/.env
+
+# ── Python / backend ─────────────────────────────────────
+**/.venv/
+**/__pycache__/
+*.pyc
+backend/.eia_cache.json
+backend/.bh_cache/
+
+# ── Node / frontend ──────────────────────────────────────
+**/node_modules/
+**/dist/
+**/dist-ssr/
+*.local
+
+# ── Editor / OS ──────────────────────────────────────────
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+*.log
+
+# ── Agent / local tooling ────────────────────────────────
+.claude/
+
+# ── Stray output files ───────────────────────────────────
+/killing
+/nothing
