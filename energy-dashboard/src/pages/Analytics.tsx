@@ -7,6 +7,7 @@ import { Button } from '@/components/ui';
 import { MultiLineChart, AreaChartPro, SpreadBars } from '@/components/charts';
 import { CorrelationHeatmap } from '@/components/charts/Heatmap';
 import { SpreadMonitor } from '@/components/widgets/Panels';
+import { LeadLagAnalysis } from '@/components/widgets/LeadLagAnalysis';
 import { comparisonSeries, brentSeries, correlationMatrix, CORRELATION_ASSETS } from '@/data/series';
 import { useQuotes } from '@/hooks/useQuotes';
 import { useCorrelation, useComparison, useSeries, ENERGY_ASSETS } from '@/hooks/useHistory';
@@ -121,6 +122,8 @@ export function Analytics() {
           </Card>
         </div>
       </div>
+
+      <LeadLagAnalysis />
 
       <SpreadMonitor spreads={spreads} />
     </div>

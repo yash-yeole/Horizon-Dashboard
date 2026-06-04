@@ -1,6 +1,7 @@
 import type {
   QuotesResponse, HistoryResponse, QuoteGroup, ApiQuote, CurveResponse, CurveCompare,
-  EiaInventoryResponse, NewsResponse, CftcResponse, RigCountResponse,
+  EiaInventoryResponse, NewsResponse, CftcResponse, RigCountResponse, LeadLagResponse,
+  VesselsResponse, ChokepointsResponse,
 } from '@/types/api';
 
 // In dev, Vite proxies /api -> http://localhost:8000 (see vite.config.ts).
@@ -39,4 +40,13 @@ export const api = {
 
   rigCount: (refresh = false, signal?: AbortSignal) =>
     getJson<RigCountResponse>(`/api/rigcount?refresh=${refresh}`, signal),
+
+  leadLag: (base = 'brent', timeframe = 'intraday', signal?: AbortSignal) =>
+    getJson<LeadLagResponse>(`/api/leadlag?base=${base}&timeframe=${timeframe}`, signal),
+
+  shippingVessels: (limit = 800, signal?: AbortSignal) =>
+    getJson<VesselsResponse>(`/api/shipping/vessels?limit=${limit}`, signal),
+
+  shippingChokepoints: (signal?: AbortSignal) =>
+    getJson<ChokepointsResponse>('/api/shipping/chokepoints', signal),
 };

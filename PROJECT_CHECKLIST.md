@@ -14,7 +14,7 @@ commercial data subscription.
 - [x] FastAPI backend proxy with in-memory TTL cache + graceful stale fallback
 - [x] Live quotes via Yahoo Finance (no key): Brent, WTI, RBOB, Heating Oil, VIX, DXY, S&P 500, US 10Y, Gold, Copper
 - [x] History endpoint (`/api/history`) — daily/intraday series
-- [x] Forward curve endpoint (`/api/curve`) from settlement CSV
+- [x] Forward curves for all 5 commodities: **Brent + Gas Oil** (ICE settlement CSV), **WTI/Heating Oil/RBOB** (assembled from Yahoo monthly futures contracts). Selectable curve card on Crude + Products pages. _(Gas Oil needs its ICE CSV dropped in — graceful "unavailable" until then.)_
 - [x] EIA Open Data integration (key stored in git-ignored `backend/.env`)
 
 ### Live data wired into the UI
@@ -34,6 +34,7 @@ commercial data subscription.
 - [x] **Correlation matrix** (Dashboard + Macro) — real daily-return correlations
 - [x] **Comparison / rebased charts** (Macro, Products) — live histories
 - [x] **Volatility panel** (Analytics) — realized vol from returns
+- [x] **Lead-Lag analysis** (Analytics) — return cross-correlation across time shifts (1-min/15-min/hourly/daily) to find which commodity leads/lags and by how long; interactive base/timeframe + CCF chart
 - [x] **Analytics panels** (multiline, area, correlation, spreads) — live
 - [x] Removed unused "Yahoo Live" status box from Dashboard
 - [x] **News feed** — merged **FinancialJuice + OilPrice** RSS (free, no key), energy-keyword filtered, category tagging, deduped & sorted newest-first, modal with article links (Dashboard feed + News page). Resilient: if one feed is down/rate-limited, the other still serves.
@@ -55,6 +56,11 @@ commercial data subscription.
 - [ ] **Real alerts engine** — generate alerts from live thresholds (price moves, inventory draws) instead of static `ALERTS`
 - [ ] **Macro tiles** EUR/USD + US CPI — currently static (need a free FX/macro source)
 - [ ] **Economic calendar** — currently static (free sources exist but messy)
+
+## 🚢 Tanker Intelligence (Freight page) — in progress
+- [x] **Phase 1 MVP**: aisstream.io WebSocket consumer (free, no AISHub receiver needed); in-memory tanker store (AIS type 80-89); `/api/shipping/{status,vessels,heatmap,chokepoints}`; MapLibre map replacing the Global Vessel Tracking panel — heatmap + clustered tanker markers + hover + live chokepoint counts (Hormuz, Bab-el-Mandeb, Suez, Malacca, Panama). Needs `HORIZON_AISSTREAM_API_KEY` to go live (graceful "AIS offline" without).
+- [ ] **Phase 2**: routes (AG→China etc.), 7d/30d chokepoint history (needs persistence), floating-storage detection, Physical Flow Score. Endpoints stubbed (`/routes`, `/congestion`).
+- Note: free AIS is terrestrial → good coverage near coasts/chokepoints, sparse mid-ocean. AISHub is NOT free for us (requires contributing a receiver station); aisstream.io is the free source.
 
 ## ⬜ To Do — Paid / Blocked (needs subscription)
 

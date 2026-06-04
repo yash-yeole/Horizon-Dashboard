@@ -2,7 +2,7 @@ import { PageHeader } from '@/components/widgets/PageHeader';
 import { ChartCard } from '@/components/widgets/ChartCard';
 import { Card, CardHeader } from '@/components/ui/Card';
 import { DataTable, type Column } from '@/components/widgets/DataTable';
-import { MapPlaceholder } from '@/components/widgets/MapPlaceholder';
+import { TankerMap } from '@/components/widgets/TankerMap';
 import { ShippingCongestion } from '@/components/widgets/Panels';
 import { Badge } from '@/components/ui/Badge';
 import { AreaChartPro, SpreadBars } from '@/components/charts';
@@ -10,19 +10,6 @@ import { FREIGHT_RATES } from '@/data/content';
 import { brentSeries } from '@/data/series';
 import { cn, formatPercent } from '@/lib/utils';
 import type { FreightRate } from '@/types';
-
-const VESSEL_POINTS = [
-  { x: 28, y: 38, label: 'VLCC ×42', severity: 'high' as const },
-  { x: 52, y: 50, label: 'Suezmax ×18', severity: 'medium' as const },
-  { x: 70, y: 35, label: 'Aframax ×27', severity: 'medium' as const },
-  { x: 80, y: 58, label: 'LR2 ×14', severity: 'low' as const },
-  { x: 18, y: 55, label: 'MR ×31', severity: 'low' as const },
-];
-const ROUTES = [
-  { x1: 70, y1: 35, x2: 80, y2: 58 },
-  { x1: 28, y1: 38, x2: 70, y2: 35 },
-  { x1: 18, y1: 55, x2: 52, y2: 50 },
-];
 
 export function Freight() {
   const columns: Column<FreightRate & Record<string, unknown>>[] = [
@@ -40,12 +27,7 @@ export function Freight() {
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <Card>
-            <CardHeader title="Global Vessel Tracking" subtitle="AIS positions · 487 vessels" action={<Badge variant="green" dot>Live</Badge>} />
-            <div className="p-3">
-              <MapPlaceholder points={VESSEL_POINTS} routes={ROUTES} height={300} />
-            </div>
-          </Card>
+          <TankerMap />
         </div>
         <ShippingCongestion />
       </div>

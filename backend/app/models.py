@@ -156,6 +156,33 @@ class RigSeries(CamelModel):
     points: list[RigSeriesPoint]
 
 
+class LeadLagPoint(CamelModel):
+    lag: int       # in bars
+    corr: float
+
+
+class LeadLagPair(CamelModel):
+    id: str
+    name: str
+    best_lag: int            # bars; >0 => base leads other, <0 => other leads base
+    best_lag_minutes: int
+    best_corr: float
+    same_corr: float         # contemporaneous correlation (lag 0)
+    leader: str              # "base" | "other" | "sync"
+    ccf: list[LeadLagPoint]
+
+
+class LeadLagResponse(CamelModel):
+    base: str
+    base_name: str
+    timeframe: str
+    interval: str
+    bar_minutes: int
+    samples: int             # aligned sample size used
+    as_of: float
+    pairs: list[LeadLagPair]
+
+
 class RigCountResponse(CamelModel):
     na_report_date: str = ""
     ww_report_date: str = ""

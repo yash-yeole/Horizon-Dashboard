@@ -28,9 +28,12 @@ class Settings(BaseSettings):
     eia_base_url: str = "https://api.eia.gov/v2"
     eia_cache_ttl: float = 3600.0
 
-    # Forward-curve source CSV (ICE Brent settlements). Override via
-    # HORIZON_BRENT_CURVE_CSV; defaults to the file in the project root.
+    # Forward-curve settlement CSVs (ICE). Brent ships with the repo; Gas Oil is
+    # also ICE (not on Yahoo) so it reads from a CSV too — drop the file in and
+    # it lights up. WTI/Heating Oil/RBOB curves come from Yahoo contract months.
     brent_curve_csv: str = str(_PROJECT_ROOT / "LCOSettle_2(in).csv")
+    gasoil_curve_csv: str = str(_PROJECT_ROOT / "GasOilSettle.csv")
+    curve_cache_ttl: float = 300.0
 
     # News — FinancialJuice public RSS feed (free, no key). Filtered to energy
     # headlines and sentiment-tagged locally (no paid API).
@@ -50,6 +53,14 @@ class Settings(BaseSettings):
     bh_base_url: str = "https://rigcount.bakerhughes.com/"
     bh_na_page: str = "na-rig-count"
     bh_intl_page: str = "intl-rig-count"
+
+    # aisstream.io — free real-time AIS over WebSocket (free key, GitHub sign-in).
+    # Set via HORIZON_AISSTREAM_API_KEY. Without it, the shipping consumer stays
+    # off and the tanker map shows an "AIS offline" state.
+    aisstream_api_key: str = ""
+    aisstream_url: str = "wss://stream.aisstream.io/v0/stream"
+    # Drop vessels not heard from in this many seconds.
+    ais_vessel_ttl: float = 3600.0
 
     # CORS — frontend dev origins
     cors_origins: list[str] = [

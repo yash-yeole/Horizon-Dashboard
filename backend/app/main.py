@@ -2,7 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
-from .routers import cftc, curve, eia, news, quotes, rigcount
+from .routers import cftc, curve, eia, leadlag, news, quotes, rigcount, shipping
+from .services import shipping as shipping_service
 
 app = FastAPI(
     title="HORIZON Market Data API",
@@ -24,6 +25,14 @@ app.include_router(eia.router)
 app.include_router(news.router)
 app.include_router(cftc.router)
 app.include_router(rigcount.router)
+app.include_router(leadlag.router)
+app.include_router(shipping.router)
+
+
+@app.on_event("startup")
+async def _startup() -> None:
+    # Launch the AIS WebSocket consumer if a key is configured.
+    shipping_service.start()
 
 
 @app.get("/health", tags=["meta"])

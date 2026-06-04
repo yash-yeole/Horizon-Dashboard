@@ -5,6 +5,7 @@ import { MetricCard } from '@/components/widgets/MetricCard';
 import { Card, CardHeader } from '@/components/ui/Card';
 import { Progress } from '@/components/ui';
 import { AreaChartPro, MultiLineChart, SpreadBars } from '@/components/charts';
+import { ForwardCurveCard } from '@/components/widgets/ForwardCurveCard';
 import { PRODUCTS } from '@/data/market';
 import { brentSeries, comparisonSeries } from '@/data/series';
 import { useQuotes, mergeQuotes } from '@/hooks/useQuotes';
@@ -75,6 +76,10 @@ export function Products() {
             <MultiLineChart data={cmp.data.length ? cmp.data : comparisonSeries} series={['Brent', 'WTI']} height={210} />
           </ChartCard>
         </div>
+      </div>
+
+      <div className="h-[320px]">
+        <ForwardCurveCard id="rbob" selectable height={250} />
       </div>
     </div>
   );

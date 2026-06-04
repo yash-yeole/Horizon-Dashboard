@@ -85,6 +85,16 @@ export function useEiaInventories(weeks = 24) {
   return { ...query, refresh: refreshMutation.mutate, isRefreshing: refreshMutation.isPending };
 }
 
+/** Lead-lag (cross-correlation) of the energy complex vs a base instrument. */
+export function useLeadLag(base = 'brent', timeframe = 'intraday') {
+  return useQuery({
+    queryKey: ['leadlag', base, timeframe],
+    queryFn: ({ signal }) => api.leadLag(base, timeframe, signal),
+    staleTime: 5 * 60_000,
+    retry: 1,
+  });
+}
+
 /** Baker Hughes rig count (NA weekly + International monthly). Fetch-once + Refresh. */
 export function useRigCount() {
   const qc = useQueryClient();
@@ -102,6 +112,26 @@ export function useRigCount() {
     onSuccess: (fresh) => qc.setQueryData(['rigcount'], fresh),
   });
   return { ...query, refresh: refreshMutation.mutate, isRefreshing: refreshMutation.isPending };
+}
+
+/** Live tanker positions from the AIS feed (polls). */
+export function useShippingVessels(limit = 800) {
+  return useQuery({
+    queryKey: ['shipping', 'vessels', limit],
+    queryFn: ({ signal }) => api.shippingVessels(limit, signal),
+    refetchInterval: 20_000,
+    staleTime: 15_000,
+  });
+}
+
+/** Live chokepoint tanker counts (polls). */
+export function useShippingChokepoints() {
+  return useQuery({
+    queryKey: ['shipping', 'chokepoints'],
+    queryFn: ({ signal }) => api.shippingChokepoints(signal),
+    refetchInterval: 20_000,
+    staleTime: 15_000,
+  });
 }
 
 /** CFTC Commitments of Traders positioning (weekly). */

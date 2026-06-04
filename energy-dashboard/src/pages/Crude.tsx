@@ -40,7 +40,7 @@ export function Crude() {
           <LivePriceChart defaultId="brent" />
         </div>
         <div className="h-[320px]">
-          <ForwardCurveCard id="brent" title="Forward Curve" height={230} />
+          <ForwardCurveCard id="brent" selectable height={230} />
         </div>
       </div>
 

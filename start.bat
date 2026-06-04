@@ -8,7 +8,7 @@ set "ROOT=%~dp0"
 set "BACKEND=%ROOT%backend"
 set "FRONTEND=%ROOT%energy-dashboard"
 set "NODE_DIR=C:\Program Files\nodejs"
-
+    
 echo Starting HORIZON Energy Terminal...
 echo   Backend  : http://localhost:8000  (docs at /docs)
 echo   Frontend : http://localhost:5173

@@ -147,6 +147,33 @@ export interface RigSeries {
   points: { date: string; value: number }[];
 }
 
+export interface LeadLagPoint {
+  lag: number;
+  corr: number;
+}
+
+export interface LeadLagPair {
+  id: string;
+  name: string;
+  bestLag: number;
+  bestLagMinutes: number;
+  bestCorr: number;
+  sameCorr: number;
+  leader: 'base' | 'other' | 'sync';
+  ccf: LeadLagPoint[];
+}
+
+export interface LeadLagResponse {
+  base: string;
+  baseName: string;
+  timeframe: string;
+  interval: string;
+  barMinutes: number;
+  samples: number;
+  asOf: number;
+  pairs: LeadLagPair[];
+}
+
 export interface RigCountResponse {
   naReportDate: string;
   wwReportDate: string;
@@ -157,4 +184,43 @@ export interface RigCountResponse {
   intlSummary: RigItem[];
   intlRegions: RigItem[];
   wwHistory: RigSeries[];
+}
+
+export interface ShippingStatus {
+  hasKey: boolean;
+  connected: boolean;
+  vesselCount: number;
+}
+
+export interface AisVessel {
+  mmsi: number;
+  name: string;
+  klass: string;
+  lat: number;
+  lon: number;
+  sog: number | null;
+  cog: number | null;
+  heading: number | null;
+  destination: string;
+  lastSeen: number;
+}
+
+export interface VesselsResponse {
+  status: ShippingStatus;
+  vessels: AisVessel[];
+}
+
+export interface ChokepointStat {
+  name: string;
+  count: number;
+  avg7d: number | null;
+  avg30d: number | null;
+  baseline: number;
+  deviation: number;
+  status: 'Normal' | 'Elevated' | 'Congested';
+}
+
+export interface ChokepointsResponse {
+  status: ShippingStatus;
+  chokepoints: ChokepointStat[];
 }
