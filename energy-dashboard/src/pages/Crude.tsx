@@ -7,6 +7,7 @@ import { Button } from '@/components/ui';
 import { SpreadBars } from '@/components/charts';
 import { LivePriceChart } from '@/components/widgets/LivePriceChart';
 import { ForwardCurveCard } from '@/components/widgets/ForwardCurveCard';
+import { StructureCurveCard } from '@/components/widgets/StructureCurveCard';
 import { SpreadMonitor } from '@/components/widgets/Panels';
 import { CftcPositioning } from '@/components/widgets/CftcPositioning';
 import { CRUDE_GRADES } from '@/data/market';
@@ -42,6 +43,12 @@ export function Crude() {
         <div className="h-[320px]">
           <ForwardCurveCard id="brent" selectable height={230} />
         </div>
+      </div>
+
+      {/* Calendar spreads + butterflies */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div className="h-[320px]"><StructureCurveCard mode="spreads" defaultId="wti" height={235} /></div>
+        <div className="h-[320px]"><StructureCurveCard mode="flys" defaultId="wti" height={235} /></div>
       </div>
 
       <CftcPositioning />

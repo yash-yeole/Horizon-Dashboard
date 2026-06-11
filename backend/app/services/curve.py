@@ -199,6 +199,93 @@ def _response(curve_id, meta, as_of, compare, compare_date, points) -> dict:
     }
 
 
+# ---------------- structure history (calendar spreads + butterflies) ----------------
+
+# (key, leg_a_index, leg_b_index) — spread = settles[a] - settles[b]
+SPREAD_DEFS: list[tuple[str, int, int]] = [("M1-M2", 0, 1), ("M1-M6", 0, 5), ("M1-M12", 0, 11)]
+# (key, a, b, c) — butterfly = settles[a] - 2*settles[b] + settles[c]
+FLY_DEFS: list[tuple[str, int, int, int]] = [("1-2-3", 0, 1, 2), ("2-3-4", 1, 2, 3), ("4-5-6", 3, 4, 5)]
+
+_MAX_STRUCTURE_DAYS = 180
+
+
+def _structure_from_rows(rows: list[tuple[date, list[float]]]) -> tuple[dict, dict]:
+    rows = rows[-_MAX_STRUCTURE_DAYS:]
+    spreads: dict[str, list[dict]] = {k: [] for k, *_ in SPREAD_DEFS}
+    flys: dict[str, list[dict]] = {k: [] for k, *_ in FLY_DEFS}
+    for d, s in rows:
+        iso = d.isoformat()
+        for k, a, b in SPREAD_DEFS:
+            if len(s) > b:
+                spreads[k].append({"date": iso, "value": round(s[a] - s[b], 4)})
+        for k, a, b, c in FLY_DEFS:
+            if len(s) > c:
+                flys[k].append({"date": iso, "value": round(s[a] - 2 * s[b] + s[c], 4)})
+    return spreads, flys
+
+
+async def _yahoo_rows(curve_id: str, meta: dict) -> list[tuple[date, list[float]]]:
+    """Assemble daily curves [(date, [M1, M2, …]), …] from per-contract histories."""
+    cache_key = f"{curve_id}:structure-rows"
+    cached = _yahoo_cache.get(cache_key)
+    if cached is not None:
+        return cached
+
+    symbols = _contract_symbols(meta["root"], meta["suffix"])
+    async with httpx.AsyncClient(
+        base_url=settings.yahoo_base_url,
+        headers={"User-Agent": settings.yahoo_user_agent},
+        timeout=settings.request_timeout,
+    ) as client:
+        async def one(sym: str) -> dict[date, float]:
+            try:
+                resp = await client.get(
+                    f"/v8/finance/chart/{urllib.parse.quote(sym)}",
+                    params={"range": "6mo", "interval": "1d"},
+                )
+                result = resp.json()["chart"]["result"][0]
+                ts = result.get("timestamp") or []
+                closes = result["indicators"]["quote"][0]["close"]
+                return {date.fromtimestamp(t): float(c) for t, c in zip(ts, closes) if c is not None}
+            except (httpx.HTTPError, KeyError, IndexError, TypeError, ValueError):
+                return {}
+
+        maps = await asyncio.gather(*(one(s) for s in symbols))
+
+    all_dates = sorted(set().union(*[set(m) for m in maps if m]) or set())
+    rows: list[tuple[date, list[float]]] = []
+    for d in all_dates:
+        settles: list[float] = []
+        for m in maps:  # stop at first gap to keep leading contiguous contracts
+            v = m.get(d)
+            if v is None:
+                break
+            settles.append(v)
+        if len(settles) >= 2:
+            rows.append((d, settles))
+    _yahoo_cache.set(cache_key, rows)
+    return rows
+
+
+async def get_structure_history(curve_id: str) -> dict:
+    meta = CURVE_META.get(curve_id)
+    if meta is None:
+        raise KeyError(curve_id)
+    rows = _load_csv(meta["csv"]) if meta["source"] == "csv" else await _yahoo_rows(curve_id, meta)
+    if not rows:
+        raise CurveUnavailable(f"no structure history for {curve_id}")
+    spreads, flys = _structure_from_rows(rows)
+    return {
+        "id": curve_id,
+        "name": meta["name"],
+        "currency": meta["currency"],
+        "unit": meta["unit"],
+        "as_of": rows[-1][0].isoformat(),
+        "spreads": [{"key": k, "label": k, "points": spreads[k]} for k, *_ in SPREAD_DEFS if spreads[k]],
+        "flys": [{"key": k, "label": k, "points": flys[k]} for k, *_ in FLY_DEFS if flys[k]],
+    }
+
+
 # ---------------- dispatch ----------------
 
 async def get_curve(curve_id: str, compare: str = "now") -> dict:

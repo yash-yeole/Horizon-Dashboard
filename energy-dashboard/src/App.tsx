@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { AlertsProvider } from '@/context/AlertsProvider';
 import { AppShell } from '@/components/layout/AppShell';
 import { Dashboard } from '@/pages/Dashboard';
 import { Crude } from '@/pages/Crude';
@@ -14,6 +15,7 @@ import { Settings } from '@/pages/Settings';
 
 export default function App() {
   return (
+    <AlertsProvider>
     <BrowserRouter>
       <Routes>
         <Route element={<AppShell />}>
@@ -31,5 +33,6 @@ export default function App() {
         </Route>
       </Routes>
     </BrowserRouter>
+    </AlertsProvider>
   );
 }

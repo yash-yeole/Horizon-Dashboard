@@ -53,7 +53,8 @@ commercial data subscription.
   - [ ] PADD-level regional stocks (replace the static regional map)
   - [ ] Natural-gas storage — _skipped (not needed)_
 - [ ] **News sentiment — proper model** _(deferred, do later)_: replace the keyword lexicon with an ML classifier (e.g. FinBERT / a finance-tuned transformer, free & local) to label headlines bullish/bearish/neutral with real context understanding. Backend already has a clean `_classify()` seam to swap in.
-- [ ] **Real alerts engine** — generate alerts from live thresholds (price moves, inventory draws) instead of static `ALERTS`
+- [x] **Alerts engine (Phase 1)** — client-side, app-wide engine evaluating live data with edge-triggered (cross + re-arm) semantics; rules + fired history in localStorage; toasts + bell badge + Alerts page (create/manage rules, triggered feed). Covers price, %-move, spread, curve M1-M2, curve regime (contango↔backwardation), inventory w/w, macro (DXY/VIX), CFTC positioning, rig count.
+  - [ ] Phase 2: sentiment alerts (after the sentiment model), chokepoint/tanker alerts, server-side engine for background firing + external delivery (email/Telegram).
 - [ ] **Macro tiles** EUR/USD + US CPI — currently static (need a free FX/macro source)
 - [ ] **Economic calendar** — currently static (free sources exist but messy)
 

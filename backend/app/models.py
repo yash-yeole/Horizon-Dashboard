@@ -62,6 +62,27 @@ class CurveResponse(CamelModel):
     points: list[CurvePoint]
 
 
+class CurveStructurePoint(CamelModel):
+    date: str  # ISO date
+    value: float
+
+
+class CurveStructureSeries(CamelModel):
+    key: str    # M1-M2 | M1-M6 | M1-M12 | 1-2-3 | 2-3-4 | 4-5-6
+    label: str
+    points: list[CurveStructurePoint]
+
+
+class CurveStructureResponse(CamelModel):
+    id: str
+    name: str
+    currency: str
+    unit: str
+    as_of: str  # ISO date of the latest curve
+    spreads: list[CurveStructureSeries]
+    flys: list[CurveStructureSeries]
+
+
 class EiaPoint(CamelModel):
     period: str  # ISO week-ending date
     value: float | None = None
@@ -96,6 +117,14 @@ class NewsItem(CamelModel):
     importance: str = "medium"  # high | medium | low
     tags: list[str] = []
     link: str = ""
+    # --- sentiment v1 (directional, oil-price impact) ---
+    impact: float = 0.0  # -1..+1 signed; sign=direction, |val|=magnitude; FOR CRUDE
+    confidence: float = 0.2  # 0..1
+    theme_primary: str = "Macro"  # Supply|Demand|Inventory|Freight|Geopolitics|Refining|Macro|Weather
+    themes_secondary: list[str] = []
+    product_divergence: bool = False  # true => hits products/cracks, keep OUT of crude gauge
+    kind: str = "event"  # event | forecast | opinion
+    event_key: str = ""  # dedup cluster id
 
 
 class NewsResponse(CamelModel):
@@ -181,6 +210,16 @@ class LeadLagResponse(CamelModel):
     samples: int             # aligned sample size used
     as_of: float
     pairs: list[LeadLagPair]
+
+
+class CalendarEvent(CamelModel):
+    date: str          # YYYY-MM-DD
+    time_et: str       # "10:30" or "" if time not fixed
+    title: str
+    category: str      # EIA | CFTC | OPEC | IEA | BakerHughes
+    importance: str    # high | medium | low
+    description: str
+    is_delayed: bool = False  # True when shifted due to federal holiday
 
 
 class RigCountResponse(CamelModel):

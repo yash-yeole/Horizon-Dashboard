@@ -9,6 +9,7 @@ backend/.env
 *.pyc
 backend/.eia_cache.json
 backend/.bh_cache/
+backend/.news_store.json
 
 # ── Node / frontend ──────────────────────────────────────
 **/node_modules/

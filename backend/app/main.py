@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
-from .routers import cftc, curve, eia, leadlag, news, quotes, rigcount, shipping
+from .routers import calendar, cftc, curve, eia, leadlag, news, quotes, rigcount, shipping
 from .services import shipping as shipping_service
 
 app = FastAPI(
@@ -19,6 +19,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(calendar.router)
 app.include_router(quotes.router)
 app.include_router(curve.router)
 app.include_router(eia.router)

@@ -28,7 +28,16 @@ export function useNews(limit = 40) {
   const live = !!query.data?.items?.length && !query.data.stale;
   const items: NewsFeedItem[] = live
     ? query.data!.items.map((i) => ({ ...i, timestamp: relTime(i.publishedAt, i.timestamp) }))
-    : (NEWS as NewsFeedItem[]);
+    : (NEWS as NewsFeedItem[]).map((n) => ({
+        ...n,
+        impact: n.impact ?? (n.sentiment === 'bullish' ? 0.4 : n.sentiment === 'bearish' ? -0.4 : 0),
+        confidence: n.confidence ?? 0.3,
+        themePrimary: n.themePrimary ?? 'Macro',
+        themesSecondary: n.themesSecondary ?? [],
+        productDivergence: n.productDivergence ?? false,
+        kind: n.kind ?? 'event',
+        eventKey: n.eventKey ?? n.id,
+      }));
   return { ...query, items, isLive: live };
 }
 
@@ -150,6 +159,25 @@ export function useCurve(id: string, compare: CurveCompare = 'now') {
     queryKey: ['curve', id, compare],
     queryFn: ({ signal }) => api.curve(id, compare, signal),
     staleTime: 5 * 60_000,
+  });
+}
+
+/** Daily calendar-spread + butterfly history derived from a commodity's curve. */
+export function useCurveStructure(id: string) {
+  return useQuery({
+    queryKey: ['curve-structure', id],
+    queryFn: ({ signal }) => api.curveStructure(id, signal),
+    staleTime: 10 * 60_000,
+    retry: 1,
+  });
+}
+
+/** Energy market calendar — EIA, CFTC, OPEC, IEA, Baker Hughes events. */
+export function useCalendar(days = 60) {
+  return useQuery({
+    queryKey: ['calendar', days],
+    queryFn: ({ signal }) => api.calendar(days, signal),
+    staleTime: 6 * 60 * 60_000, // 6h — dates don't change
   });
 }
 

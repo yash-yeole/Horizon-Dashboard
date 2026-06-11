@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
+import { labelFromImpact, labelVariant } from '@/lib/sentiment';
 
 type Variant = 'green' | 'red' | 'amber' | 'blue' | 'purple' | 'cyan' | 'neutral';
 
@@ -46,6 +47,21 @@ export function SentimentBadge({ sentiment }: { sentiment: 'bullish' | 'bearish'
   };
   const { v, label } = map[sentiment];
   return <Badge variant={v}>{label}</Badge>;
+}
+
+export function ImpactBadge({ impact }: { impact?: number }) {
+  const label = labelFromImpact(impact ?? 0);
+  return <Badge variant={labelVariant(label)}>{label}</Badge>;
+}
+
+export function ThemeBadge({ theme }: { theme?: string }) {
+  if (!theme) return null;
+  return <Badge variant="blue">{theme}</Badge>;
+}
+
+export function KindBadge({ kind }: { kind?: string }) {
+  if (!kind || kind === 'event') return null;
+  return <Badge variant="purple">{kind}</Badge>;
 }
 
 export function ImportanceBadge({ importance }: { importance: 'high' | 'medium' | 'low' }) {

@@ -40,6 +40,23 @@ class Settings(BaseSettings):
     news_feed_url: str = "https://www.financialjuice.com/feed.ashx?xy=rss"
     oilprice_feed_url: str = "https://oilprice.com/rss/main"
     news_cache_ttl: float = 60.0
+    # Persistent scored-news memory (queue): keep the N most recent headlines, so
+    # sentiment survives restarts, only NEW headlines are scored, and the feed
+    # stays intact offline. File lives at backend/.news_store.json (gitignored).
+    news_store_size: int = 40
+
+    # Google Gemini — free-tier LLM sentiment scorer. Set via HORIZON_GEMINI_API_KEY
+    # (get one at https://aistudio.google.com). Without it, scoring falls back to
+    # the offline keyword lexicon automatically.
+    gemini_api_key: str = ""
+    gemini_model: str = "gemini-2.0-flash"
+    gemini_base_url: str = "https://generativelanguage.googleapis.com/v1beta"
+
+    # Groq — free-tier, fast, OpenAI-compatible. Set via HORIZON_GROQ_API_KEY
+    # (free key at https://console.groq.com/keys). Preferred over Gemini when set.
+    groq_api_key: str = ""
+    groq_model: str = "llama-3.3-70b-versatile"
+    groq_base_url: str = "https://api.groq.com/openai/v1"
 
     # CFTC Commitments of Traders — free Socrata API, no token. Disaggregated
     # Futures-Only dataset. Weekly data (released Fridays), so cache long.

@@ -1,51 +1,19 @@
-import { Search, Bell, ChevronDown, Settings2, Sun, Globe } from 'lucide-react';
+import { Bell, ChevronDown, Settings2, Sun, Globe } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useClock } from '@/hooks/useClock';
-import { useUIStore } from '@/store/useUIStore';
-import { StatusDot } from '@/components/ui';
-
-const WATCHLISTS = ['Energy Core', 'Crude Complex', 'Refined Products', 'Macro Hedge', 'Freight'];
+import { useAlerts } from '@/context/AlertsProvider';
 
 export function Topbar() {
   const clock = useClock();
-  const watchlist = useUIStore((s) => s.watchlist);
-  const setWatchlist = useUIStore((s) => s.setWatchlist);
+  const { unread } = useAlerts();
 
   return (
     <header className="flex h-12 shrink-0 items-center gap-3 border-b border-[#1f2230] bg-[#0a0b0d] px-4">
-      {/* Search */}
-      <div className="relative flex-1 max-w-md">
-        <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-600" />
-        <input
-          placeholder="Search markets, instruments, news…"
-          className="h-8 w-full rounded-md border border-[#1f2230] bg-[#0f1117] pl-8 pr-12 text-xs text-slate-200 placeholder:text-slate-600 focus:border-blue-500/40 focus:outline-none focus:ring-1 focus:ring-blue-500/20"
-        />
-        <kbd className="absolute right-2 top-1/2 -translate-y-1/2 rounded border border-[#2a2d3e] bg-[#161820] px-1.5 py-0.5 text-[9px] text-slate-500">
-          ⌘K
-        </kbd>
-      </div>
+      {/* Page title (portaled in by the active page's PageHeader) */}
+      <div id="page-chrome-title" className="flex min-w-0 flex-1 items-center" />
 
-      {/* Market status */}
-      <div className="hidden items-center gap-3 rounded-md border border-[#1f2230] bg-[#0f1117] px-3 py-1.5 lg:flex">
-        <StatusDot status="live" label="ICE" />
-        <span className="h-3 w-px bg-[#1f2230]" />
-        <StatusDot status="live" label="NYMEX" />
-        <span className="h-3 w-px bg-[#1f2230]" />
-        <StatusDot status="pre" label="CME" />
-      </div>
-
-      {/* Watchlist selector */}
-      <div className="relative hidden md:block">
-        <select
-          value={watchlist}
-          onChange={(e) => setWatchlist(e.target.value)}
-          className="h-8 cursor-pointer appearance-none rounded-md border border-[#1f2230] bg-[#0f1117] pl-3 pr-8 text-xs text-slate-300 focus:border-blue-500/40 focus:outline-none"
-        >
-          {WATCHLISTS.map((w) => (
-            <option key={w} value={w}>{w}</option>
-          ))}
-        </select>
-        <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-600" />
-      </div>
+      {/* Page actions (portaled in by the active page's PageHeader) */}
+      <div id="page-chrome-actions" className="flex items-center gap-2" />
 
       {/* UTC clock */}
       <div className="hidden items-center gap-1.5 rounded-md border border-[#1f2230] bg-[#0f1117] px-2.5 py-1.5 sm:flex">
@@ -59,10 +27,14 @@ export function Topbar() {
         <button className="flex h-8 w-8 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-[#161820] hover:text-slate-300">
           <Sun className="h-4 w-4" strokeWidth={1.75} />
         </button>
-        <button className="relative flex h-8 w-8 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-[#161820] hover:text-slate-300">
+        <Link to="/alerts" title="Alerts" className="relative flex h-8 w-8 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-[#161820] hover:text-slate-300">
           <Bell className="h-4 w-4" strokeWidth={1.75} />
-          <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-red-500 ring-2 ring-[#0a0b0d]" />
-        </button>
+          {unread > 0 && (
+            <span className="absolute -right-0.5 -top-0.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-red-500 px-1 text-[8px] font-bold text-white ring-2 ring-[#0a0b0d]">
+              {unread > 9 ? '9+' : unread}
+            </span>
+          )}
+        </Link>
         <button className="flex h-8 w-8 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-[#161820] hover:text-slate-300">
           <Settings2 className="h-4 w-4" strokeWidth={1.75} />
         </button>

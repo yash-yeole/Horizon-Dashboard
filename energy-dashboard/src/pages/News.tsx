@@ -2,7 +2,8 @@ import { useState, useMemo } from 'react';
 import { Clock, Search, Filter } from 'lucide-react';
 import { PageHeader } from '@/components/widgets/PageHeader';
 import { Card, CardHeader } from '@/components/ui/Card';
-import { SentimentBadge, ImportanceBadge, Badge } from '@/components/ui/Badge';
+import { ImpactBadge, ThemeBadge, KindBadge, ImportanceBadge, Badge } from '@/components/ui/Badge';
+import { SentimentGauge } from '@/components/widgets/Panels';
 import { Tabs, FilterBar, Button } from '@/components/ui';
 import { NewsModal } from '@/components/widgets/NewsModal';
 import { useNews } from '@/hooks/useQuotes';
@@ -33,35 +34,11 @@ export function News() {
     );
   }, [news, cat, sentiment, query]);
 
-  const sentimentStats = useMemo(() => {
-    const bull = news.filter((n) => n.sentiment === 'bullish').length;
-    const bear = news.filter((n) => n.sentiment === 'bearish').length;
-    const total = news.length;
-    return { bull, bear, neutral: total - bull - bear, total };
-  }, [news]);
-
   return (
     <div className="space-y-4">
       <PageHeader title="News & Sentiment" description="Real-time market wire · categorized streams · sentiment analytics" />
 
-      {/* Sentiment overview */}
-      <div className="grid grid-cols-3 gap-3">
-        <Card className="p-3">
-          <p className="text-[10px] uppercase tracking-wide text-slate-500">Bullish Signals</p>
-          <p className="mono mt-1 text-xl font-bold text-green-400">{sentimentStats.bull}</p>
-          <div className="mt-1.5 h-1 overflow-hidden rounded bg-[#1c1e27]"><div className="h-full bg-green-500" style={{ width: `${(sentimentStats.bull / sentimentStats.total) * 100}%` }} /></div>
-        </Card>
-        <Card className="p-3">
-          <p className="text-[10px] uppercase tracking-wide text-slate-500">Bearish Signals</p>
-          <p className="mono mt-1 text-xl font-bold text-red-400">{sentimentStats.bear}</p>
-          <div className="mt-1.5 h-1 overflow-hidden rounded bg-[#1c1e27]"><div className="h-full bg-red-500" style={{ width: `${(sentimentStats.bear / sentimentStats.total) * 100}%` }} /></div>
-        </Card>
-        <Card className="p-3">
-          <p className="text-[10px] uppercase tracking-wide text-slate-500">Net Sentiment</p>
-          <p className="mono mt-1 text-xl font-bold text-slate-200">{sentimentStats.bull > sentimentStats.bear ? 'Bullish' : 'Bearish'}</p>
-          <p className="text-[10px] text-slate-500">{sentimentStats.total} stories · 24h</p>
-        </Card>
-      </div>
+      <SentimentGauge />
 
       <FilterBar>
         <div className="relative flex-1 min-w-[200px]">
@@ -103,7 +80,9 @@ export function News() {
               </div>
               <div className="min-w-0 flex-1">
                 <div className="mb-1 flex flex-wrap items-center gap-1.5">
-                  <SentimentBadge sentiment={n.sentiment} />
+                  <ImpactBadge impact={n.impact} />
+                  <ThemeBadge theme={n.themePrimary} />
+                  <KindBadge kind={n.kind} />
                   <ImportanceBadge importance={n.importance} />
                   <Badge variant="blue">{n.category}</Badge>
                   <span className="text-[9px] font-medium text-slate-500">{n.source}</span>

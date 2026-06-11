@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { X, Clock, ExternalLink, Tag } from 'lucide-react';
-import { SentimentBadge, ImportanceBadge, Badge } from '@/components/ui/Badge';
+import { ImpactBadge, ThemeBadge, KindBadge, ImportanceBadge, Badge } from '@/components/ui/Badge';
 import { useNews } from '@/hooks/useQuotes';
 
 export function NewsModal({ newsId, onClose }: { newsId: string | null; onClose: () => void }) {
@@ -26,7 +26,9 @@ export function NewsModal({ newsId, onClose }: { newsId: string | null; onClose:
           >
             <div className="flex items-center justify-between border-b border-[#1f2230] px-4 py-3">
               <div className="flex items-center gap-2">
-                <SentimentBadge sentiment={item.sentiment} />
+                <ImpactBadge impact={item.impact} />
+                <ThemeBadge theme={item.themePrimary} />
+                <KindBadge kind={item.kind} />
                 <ImportanceBadge importance={item.importance} />
                 <Badge variant="blue">{item.category}</Badge>
               </div>

@@ -27,17 +27,17 @@ async def get_news(limit: int = Query(40, ge=5, le=100)):
     snapshot: NewsResponse | None = _cache.get(_CACHE_KEY)
     if snapshot is None:
         try:
-            items = await news.fetch_news(_FETCH_CAP)
+            items, stale = await news.fetch_news(_FETCH_CAP)
         except Exception:  # noqa: BLE001 — serve stale snapshot if we have one
-            items = []
+            items, stale = [], True
         if items:
-            snapshot = NewsResponse(items=items, as_of=time.time())
+            snapshot = NewsResponse(items=items, as_of=time.time(), stale=stale)
             _cache.set(_CACHE_KEY, snapshot)
         else:
-            stale = _cache.get_stale(_CACHE_KEY)
-            if stale is not None:
-                stale.stale = True
-                snapshot = stale
+            old = _cache.get_stale(_CACHE_KEY)
+            if old is not None:
+                old.stale = True
+                snapshot = old
             else:
                 raise HTTPException(status_code=502, detail="news feed unavailable and no cached data")
 

@@ -40,6 +40,13 @@ export interface NewsItem {
   sentiment: 'bullish' | 'bearish' | 'neutral';
   importance: 'high' | 'medium' | 'low';
   tags: string[];
+  impact?: number;
+  confidence?: number;
+  themePrimary?: string;
+  themesSecondary?: string[];
+  productDivergence?: boolean;
+  kind?: 'event' | 'forecast' | 'opinion';
+  eventKey?: string;
 }
 
 export interface InventoryData {

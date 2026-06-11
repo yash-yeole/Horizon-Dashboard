@@ -58,6 +58,27 @@ export interface CurveResponse {
   points: CurvePoint[];
 }
 
+export interface CurveStructurePoint {
+  date: string;
+  value: number;
+}
+
+export interface CurveStructureSeries {
+  key: string;
+  label: string;
+  points: CurveStructurePoint[];
+}
+
+export interface CurveStructureResponse {
+  id: string;
+  name: string;
+  currency: string;
+  unit: string;
+  asOf: string;
+  spreads: CurveStructureSeries[];
+  flys: CurveStructureSeries[];
+}
+
 export interface EiaPoint {
   period: string;
   value: number | null;
@@ -92,6 +113,13 @@ export interface NewsApiItem {
   importance: 'high' | 'medium' | 'low';
   tags: string[];
   link: string;
+  impact: number;
+  confidence: number;
+  themePrimary: string;
+  themesSecondary: string[];
+  productDivergence: boolean;
+  kind: 'event' | 'forecast' | 'opinion';
+  eventKey: string;
 }
 
 export interface NewsResponse {
@@ -223,4 +251,14 @@ export interface ChokepointStat {
 export interface ChokepointsResponse {
   status: ShippingStatus;
   chokepoints: ChokepointStat[];
+}
+
+export interface CalendarEvent {
+  date: string;       // YYYY-MM-DD
+  timeEt: string;     // "10:30" or "" if time not fixed
+  title: string;
+  category: string;   // EIA | CFTC | OPEC | IEA | BakerHughes
+  importance: 'high' | 'medium' | 'low';
+  description: string;
+  isDelayed: boolean;
 }

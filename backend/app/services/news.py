@@ -9,15 +9,39 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import json
 import re
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
+from pathlib import Path
 from xml.etree import ElementTree as ET
 
 import httpx
 
 from ..config import settings
 from ..models import NewsItem
+from .sentiment import event_key, score_article
+from .sentiment_llm import active_provider, score_batch as llm_score_batch
+
+# Persistent scored-news memory (queue). Keyed by event_key; survives restarts.
+# Doubles as the offline feed and avoids re-scoring already-seen headlines.
+_STORE_FILE = Path(__file__).resolve().parents[2] / ".news_store.json"
+
+
+def _load_store() -> dict[str, dict]:
+    if _STORE_FILE.exists():
+        try:
+            return json.loads(_STORE_FILE.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return {}
+    return {}
+
+
+def _save_store(store: dict[str, dict]) -> None:
+    try:
+        _STORE_FILE.write_text(json.dumps(store), encoding="utf-8")
+    except OSError:
+        pass
 
 # --- Energy relevance: keep a headline only if it mentions one of these ---
 ENERGY_KEYWORDS = [
@@ -26,22 +50,6 @@ ENERGY_KEYWORDS = [
     "gasoil", "jet fuel", "heating oil", "naphtha", "propane", "fuel oil",
     "lng", "natural gas", "nat gas", "henry hub", "shale", "rig", "drilling",
     "pipeline", "aramco", "energy", "eia", "iea", "inventories", "barrels",
-]
-
-# --- Sentiment lexicon (price-direction for the energy complex) ---
-BULLISH = [
-    "cut", "cuts", "output cut", "supply cut", "draw", "drawdown", "shortage",
-    "tighten", "tightening", "outage", "disruption", "halt", "shutdown",
-    "force majeure", "sanction", "sanctions", "embargo", "attack", "strike",
-    "war", "conflict", "escalation", "blockade", "unplanned", "deeper cuts",
-    "strong demand", "robust demand", "record demand", "beats",
-]
-BEARISH = [
-    "build", "builds", "buildup", "glut", "oversupply", "surplus", "oversupplied",
-    "ramp up", "raise output", "increase output", "boost output", "higher output",
-    "resume", "resumes", "restart", "return", "returns", "ceasefire", "truce",
-    "deal", "agreement", "weak demand", "soft demand", "demand concerns",
-    "slowdown", "recession", "downgrade", "lower demand", "cut forecast",
 ]
 
 # --- Category routing ---
@@ -60,24 +68,52 @@ def _has(text: str, phrases: list[str]) -> list[str]:
     return [p for p in phrases if p in text]
 
 
-def _classify(title: str) -> tuple[str, str, str, list[str]]:
-    """Return (sentiment, category, importance, tags) for a lowercased title."""
-    bull = len(_has(title, BULLISH))
-    bear = len(_has(title, BEARISH))
-    sentiment = "bullish" if bull > bear else "bearish" if bear > bull else "neutral"
-
-    if _has(title, PRODUCTS_KW):
+def _basic(title: str, summary: str, day_bucket: str) -> tuple[str, list[str], str]:
+    """Deterministic, score-free fields: (category, tags, event_key)."""
+    text = f"{title} {summary}".lower()
+    if _has(text, PRODUCTS_KW):
         category = "Products"
-    elif _has(title, CRUDE_KW):
+    elif _has(text, CRUDE_KW):
         category = "Crude"
     else:
         category = "Macro"
-
-    importance = "high" if _has(title, HIGH_KW) else "medium"
-
-    matched = _has(title, ENERGY_KEYWORDS)
+    matched = _has(text, ENERGY_KEYWORDS)
     tags = [t.upper() if len(t) <= 4 else t.title() for t in matched[:3]]
-    return sentiment, category, importance, tags
+    return category, tags, event_key(title, day_bucket)
+
+
+def _apply_score(item: NewsItem, res) -> None:
+    """Write a SentimentResult onto an item + derive legacy sentiment/importance."""
+    item.impact = res.impact
+    item.confidence = res.confidence
+    item.theme_primary = res.theme_primary
+    item.themes_secondary = res.themes_secondary
+    item.product_divergence = res.product_divergence
+    item.kind = res.kind
+    item.sentiment = "bullish" if res.impact >= 0.15 else "bearish" if res.impact <= -0.15 else "neutral"
+    text = f"{item.headline} {item.summary}".lower()
+    if abs(res.impact) >= 0.5 or _has(text, HIGH_KW):
+        item.importance = "high"
+    elif abs(res.impact) >= 0.2:
+        item.importance = "medium"
+    else:
+        item.importance = "low"
+
+
+async def _score_items(items: list[NewsItem]) -> None:
+    """Score new items in place — one Gemini batch call, lexicon fallback."""
+    if not items:
+        return
+    results = None
+    if active_provider() is not None:
+        try:
+            results = await llm_score_batch([f"{i.headline}. {i.summary}"[:300] for i in items])
+        except Exception:  # noqa: BLE001 — any LLM failure → offline lexicon
+            results = None
+    if results is None:
+        results = [score_article(i.headline, i.summary) for i in items]
+    for it, res in zip(items, results):
+        _apply_score(it, res)
 
 
 def _is_energy(text: str) -> bool:
@@ -144,7 +180,9 @@ def _parse(xml_bytes: bytes, source: str, strip_prefix: bool, limit: int) -> lis
             except (TypeError, ValueError):
                 pass
 
-        sentiment, category, importance, tags = _classify(text)
+        day_bucket = (datetime.fromtimestamp(published_at, timezone.utc).strftime("%Y-%m-%d")
+                      if published_at else "")
+        category, tags, ekey = _basic(title, summary, day_bucket)
         items.append(NewsItem(
             id=hashlib.sha1(guid.encode("utf-8")).hexdigest()[:12],
             headline=title,
@@ -153,19 +191,17 @@ def _parse(xml_bytes: bytes, source: str, strip_prefix: bool, limit: int) -> lis
             timestamp=timestamp,
             published_at=published_at,
             category=category,
-            sentiment=sentiment,
-            importance=importance,
             tags=tags,
             link=link,
-        ))
+            event_key=ekey,
+        ))  # sentiment fields filled later (only for NEW headlines)
         if len(items) >= limit:
             break
     return items
 
 
-async def fetch_news(limit: int = 40) -> list[NewsItem]:
-    """Fetch + merge all energy news feeds. Resilient: if one feed fails, the
-    others still return (e.g. FinancialJuice rate-limits → OilPrice still shows)."""
+async def _fetch_raw(limit: int) -> list[NewsItem]:
+    """Fetch + merge both feeds (score-free). Raises if every feed fails."""
     headers = {"User-Agent": settings.yahoo_user_agent}
     async with httpx.AsyncClient(timeout=settings.request_timeout, follow_redirects=True) as client:
         async def one(source: str, url: str, strip_prefix: bool) -> list[NewsItem]:
@@ -185,6 +221,43 @@ async def fetch_news(limit: int = 40) -> list[NewsItem]:
                 continue
             seen.add(item.id)
             merged.append(item)
+    if not merged:
+        raise RuntimeError("all news feeds failed")
+    return merged
 
-    merged.sort(key=lambda x: x.published_at or 0, reverse=True)
-    return merged[:limit]
+
+async def fetch_news(limit: int = 40) -> tuple[list[NewsItem], bool]:
+    """Memory-backed news feed.
+
+    Pulls both RSS feeds, scores ONLY headlines not already in the persistent
+    store (one Gemini batch call, lexicon fallback), then keeps the N most recent
+    (queue eviction) and persists. If every feed fails, serves the stored feed
+    flagged stale. Returns (items, stale).
+    """
+    store = _load_store()
+    stale = False
+    try:
+        raw = await _fetch_raw(settings.news_store_size)
+    except Exception:  # noqa: BLE001 — offline: fall back to the stored feed
+        raw = []
+        stale = True
+
+    new = [it for it in raw if it.event_key and it.event_key not in store]
+    await _score_items(new)
+    for it in new:
+        store[it.event_key] = it.model_dump()
+
+    # Refresh volatile fields for already-stored items still in the feed (keep their sentiment).
+    new_keys = {it.event_key for it in new}
+    for it in raw:
+        if it.event_key in store and it.event_key not in new_keys:
+            store[it.event_key].update(
+                published_at=it.published_at, timestamp=it.timestamp, link=it.link or store[it.event_key].get("link", "")
+            )
+
+    # Queue eviction: keep the N most recent by publish time.
+    keep = sorted(store.values(), key=lambda x: x.get("published_at") or 0, reverse=True)[: settings.news_store_size]
+    _save_store({e["event_key"]: e for e in keep})
+
+    feed = [NewsItem.model_validate(e) for e in keep]
+    return feed[:limit], stale

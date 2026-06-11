@@ -7,8 +7,15 @@ import { useQuote, useHistory } from '@/hooks/useQuotes';
 import { YAHOO_SYMBOLS, YAHOO_MACRO, YAHOO_PRODUCTS, type SymbolDef } from '@/constants/symbols';
 import { formatPrice, formatPercent, cn } from '@/lib/utils';
 
-// Commodities available for the live chart (everything Yahoo serves).
-const SELECTABLE: SymbolDef[] = [...YAHOO_SYMBOLS, ...YAHOO_PRODUCTS, ...YAHOO_MACRO];
+// Dubai crude has no free daily feed (not on Yahoo). We show it as an indicative
+// series derived from live Brent minus a fixed Brent–Dubai EFS spread.
+const DUBAI_EFS = 2.0; // USD/bbl; Dubai typically trades ~$2 below Brent
+const DUBAI: SymbolDef = {
+  id: 'dubai', yahoo: 'BZ=F', name: 'Dubai Crude', unit: 'bbl', currency: 'USD', category: 'crude',
+};
+
+// Commodities available for the live chart (Yahoo-served + the Dubai proxy).
+const SELECTABLE: SymbolDef[] = [...YAHOO_SYMBOLS, DUBAI, ...YAHOO_PRODUCTS, ...YAHOO_MACRO];
 
 // Range tabs mirror Yahoo Finance's own chart selector. Label -> Yahoo range param.
 const RANGE_MAP: Record<string, string> = {
@@ -53,12 +60,16 @@ export function LivePriceChart({ defaultId = 'brent' }: { defaultId?: string }) 
   }, [open]);
 
   const sym = SELECTABLE.find((s) => s.id === id) ?? SELECTABLE[0];
-  const { quote, isError: quoteError } = useQuote(id, 'all');
-  const { data: history, isLoading, isError: histError } = useHistory(id, RANGE_MAP[range]);
+  // Dubai is synthetic: fetch Brent, then shift by the EFS spread.
+  const isDubai = id === 'dubai';
+  const fetchId = isDubai ? 'brent' : id;
+  const offset = isDubai ? -DUBAI_EFS : 0;
+  const { quote, isError: quoteError } = useQuote(fetchId, 'all');
+  const { data: history, isLoading, isError: histError } = useHistory(fetchId, RANGE_MAP[range]);
 
   const chartData = useMemo(
-    () => (history?.points ?? []).map((p) => ({ time: formatPoint(p.time, range), value: p.value })),
-    [history, range]
+    () => (history?.points ?? []).map((p) => ({ time: formatPoint(p.time, range), value: p.value + offset })),
+    [history, range, offset]
   );
 
   const up = (quote?.changePct ?? 0) >= 0;
@@ -101,7 +112,7 @@ export function LivePriceChart({ defaultId = 'brent' }: { defaultId?: string }) 
   const priceMeta = quote ? (
     <span className="mono mr-2 flex items-center gap-1.5 text-sm font-semibold text-slate-100">
       {live ? <Wifi className="h-3 w-3 text-green-400" /> : <WifiOff className="h-3 w-3 text-amber-400" />}
-      {ccy}{formatPrice(quote.price)}
+      {ccy}{formatPrice(quote.price + offset)}
       <span className={cn('text-[11px]', up ? 'text-green-400' : 'text-red-400')}>{formatPercent(quote.changePct)}</span>
     </span>
   ) : null;
@@ -109,7 +120,9 @@ export function LivePriceChart({ defaultId = 'brent' }: { defaultId?: string }) 
   return (
     <ChartCard
       leftControl={selector}
-      subtitle={`${sym.yahoo} · ${sym.unit}${sym.currency ? ` · ${sym.currency}` : ''}`}
+      subtitle={isDubai
+        ? `Indicative · Brent − $${DUBAI_EFS.toFixed(2)} EFS · ${sym.unit} · ${sym.currency}`
+        : `${sym.yahoo} · ${sym.unit}${sym.currency ? ` · ${sym.currency}` : ''}`}
       ranges={RANGES}
       range={range}
       onRangeChange={setRange}

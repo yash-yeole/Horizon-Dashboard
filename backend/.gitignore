@@ -4,3 +4,4 @@ __pycache__/
 .env
 .eia_cache.json
 .bh_cache/
+.news_store.json

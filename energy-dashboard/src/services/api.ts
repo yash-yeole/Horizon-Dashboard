@@ -1,5 +1,6 @@
 import type {
   QuotesResponse, HistoryResponse, QuoteGroup, ApiQuote, CurveResponse, CurveCompare,
+  CurveStructureResponse, CalendarEvent,
   EiaInventoryResponse, NewsResponse, CftcResponse, RigCountResponse, LeadLagResponse,
   VesselsResponse, ChokepointsResponse,
 } from '@/types/api';
@@ -29,6 +30,9 @@ export const api = {
   curve: (id: string, compare: CurveCompare = 'now', signal?: AbortSignal) =>
     getJson<CurveResponse>(`/api/curve/${id}?compare=${compare}`, signal),
 
+  curveStructure: (id: string, signal?: AbortSignal) =>
+    getJson<CurveStructureResponse>(`/api/curve/${id}/structure`, signal),
+
   eiaInventories: (weeks = 24, refresh = false, signal?: AbortSignal) =>
     getJson<EiaInventoryResponse>(`/api/eia/inventories?weeks=${weeks}&refresh=${refresh}`, signal),
 
@@ -49,4 +53,7 @@ export const api = {
 
   shippingChokepoints: (signal?: AbortSignal) =>
     getJson<ChokepointsResponse>('/api/shipping/chokepoints', signal),
+
+  calendar: (days = 60, signal?: AbortSignal) =>
+    getJson<CalendarEvent[]>(`/api/calendar?days=${days}`, signal),
 };
