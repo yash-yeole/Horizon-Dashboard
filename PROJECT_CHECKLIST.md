@@ -1,6 +1,6 @@
 # HORIZON Energy Terminal — Project Checklist
 
-_Last updated: 2026-06-02_
+_Last updated: 2026-06-11_
 
 Tracks which dashboard features are wired to **live data** vs still **static/mock**,
 and what's left to do. "Free" = no paid data feed required; "Paid" = needs a
@@ -14,64 +14,71 @@ commercial data subscription.
 - [x] FastAPI backend proxy with in-memory TTL cache + graceful stale fallback
 - [x] Live quotes via Yahoo Finance (no key): Brent, WTI, RBOB, Heating Oil, VIX, DXY, S&P 500, US 10Y, Gold, Copper
 - [x] History endpoint (`/api/history`) — daily/intraday series
-- [x] Forward curves for all 5 commodities: **Brent + Gas Oil** (ICE settlement CSV), **WTI/Heating Oil/RBOB** (assembled from Yahoo monthly futures contracts). Selectable curve card on Crude + Products pages. _(Gas Oil needs its ICE CSV dropped in — graceful "unavailable" until then.)_
-- [x] EIA Open Data integration (key stored in git-ignored `backend/.env`)
+- [x] Forward curves for all 5 commodities: **Brent + Gas Oil** (ICE settlement CSV), **WTI/Heating Oil/RBOB** (assembled from Yahoo monthly futures contracts). Selectable curve card on Dashboard, Crude, Products pages. _(Gas Oil needs its ICE CSV dropped in — graceful "unavailable" until then.)_
+- [x] **Calendar spread + butterfly history** (`/api/curve/{id}/structure`) — M1-M2, M1-M6, M1-M12 spreads and 1-2-3, 2-3-4, 4-5-6 butterflies for all 5 commodities. Brent/GasOil from CSV; WTI/HO/RBOB from Yahoo contract months.
+- [x] EIA Open Data integration (key in git-ignored `backend/.env`)
+- [x] CFTC Commitments of Traders — free Socrata API (no token)
+- [x] Baker Hughes rig count — official Excel files (NA weekly + Intl monthly)
+- [x] **News pipeline** — merged FinancialJuice + OilPrice RSS, energy-filtered, deduped by `event_key`
+- [x] **Groq LLM sentiment scorer** (LLaMA 3.3-70B, free tier) — directional crude-price impact scoring; Gemini fallback; lexicon offline fallback
+- [x] **Persistent news store** — 40-item sliding queue in `.news_store.json` (gitignored); score-only-new architecture (zero LLM calls on cache hits); survives restarts; offline fallback to stored feed
+- [x] **Energy calendar endpoint** (`/api/calendar`) — rule-based, no API key: EIA Petroleum (Wed 10:30 ET + 2026 holiday exceptions), EIA Nat Gas (Thu 10:30 ET), Baker Hughes (Fri 13:00 ET), CFTC COT (exact 2026 dates), OPEC+ ministerial + IEA OMR + OPEC MOMR + EIA STEO (monthly, hard-coded 2026)
+- [x] AIS tanker WebSocket consumer (aisstream.io) — vessels, chokepoints, heatmap
 
 ### Live data wired into the UI
 - [x] Hero tiles + ticker tape (Dashboard) — live quotes
-- [x] Macro page tiles + indicators (10Y, Gold, Copper, S&P, VIX, DXY) — live
-- [x] Crude page grades/benchmarks board — live (where Yahoo provides)
-- [x] Products page benchmarks board — live
-- [x] Live price charts + cross-commodity rebasing
-- [x] **EIA Inventories page** — crude, Cushing, gasoline, distillate, propane, SPR, refinery utilization, production
-- [x] **EIA trade & demand** — crude imports/exports, net imports, gasoline/distillate demand, days-of-supply (computed)
-- [x] **Rig count (EIA)** — Baker Hughes US rotary rigs via EIA (monthly), chart + stat card
-- [x] **Rig count (Baker Hughes, full)** — official BH Excel files (free, with attribution): NA **weekly** (US/Canada totals, oil-vs-gas, trajectory, 14 basins, land/offshore) + International **monthly** (by region, worldwide total, 24-mo history). Page-scrape → download → parse (openpyxl) → persist + Refresh. Full section on Inventories + compact widget on Dashboard.
-- [x] EIA: fetch-once + **persist to disk** + manual **Refresh button** (no auto-polling)
-- [x] Dashboard "US Crude Inventories" chart — live EIA
-- [x] **Crude spreads** (3 of 6): Brent-WTI, RBOB-Brent, 3:2:1 Crack — computed live
-- [x] **Market Movers** — top gainers/losers derived live from quotes
-- [x] **Correlation matrix** (Dashboard + Macro) — real daily-return correlations
-- [x] **Comparison / rebased charts** (Macro, Products) — live histories
-- [x] **Volatility panel** (Analytics) — realized vol from returns
-- [x] **Lead-Lag analysis** (Analytics) — return cross-correlation across time shifts (1-min/15-min/hourly/daily) to find which commodity leads/lags and by how long; interactive base/timeframe + CCF chart
-- [x] **Analytics panels** (multiline, area, correlation, spreads) — live
-- [x] Removed unused "Yahoo Live" status box from Dashboard
-- [x] **News feed** — merged **FinancialJuice + OilPrice** RSS (free, no key), energy-keyword filtered, category tagging, deduped & sorted newest-first, modal with article links (Dashboard feed + News page). Resilient: if one feed is down/rate-limited, the other still serves.
-  - [x] Sentiment: **interim keyword lexicon** (placeholder — works, but to be replaced)
-- [x] **CFTC Commitments of Traders** — free Socrata API (no token); WTI, Brent (NYMEX Last Day), RBOB, Heating Oil positioning by trader class + weekly net-position history; "Trader Positioning" section on the Crude page
+- [x] **Dubai Crude** — synthetic proxy (Brent − $2.00 EFS), labeled "Indicative"
+- [x] Live price chart — 6 symbols including Dubai, up to 1Y history, candlestick + area
+- [x] **Forward Curve card** — selectable (Brent/WTI/RBOB/HO/GasOil), backwardation/contango, Dashboard + Crude + Products tabs
+- [x] **StructureCurveCard** — calendar spreads (M1-M2/M1-M6/M1-M12) and butterflies (1-2-3/2-3-4/4-5-6), commodity dropdown, on Dashboard + Crude tab
+- [x] **News feed** — live RSS, AI-scored sentiment, 40-item memory queue
+- [x] **Sentiment gauge** — embedded inside the Breaking News box (recency-decayed, confidence-weighted, crude-only); 5-tier labels (StronglyBullish → StronglyBearish)
+- [x] **EIA Inventories page** — crude, Cushing, gasoline, distillate, propane, SPR, refinery utilization, production, imports/exports, days-of-supply
+- [x] **CFTC COT positioning** — WTI + Brent managed-money net positions, weekly history on Crude page
+- [x] **Rig count** — Baker Hughes NA weekly + Intl monthly, compact widget on Dashboard
+- [x] Correlation matrix (Dashboard + Macro) — real 30d rolling daily-return correlations
+- [x] Comparison / rebased charts, volatility panel, lead-lag analysis (Analytics)
+- [x] **Z-score engine** — 16 metrics, robust MAD estimator, Tier A (% moves, spreads, positioning) + Tier B (price stretch, inventory w/w), hysteresis (±0.3σ buffer to prevent flapping). `lib/zscore.ts` + `lib/zmetrics.ts` built and verified.
+- [x] **AlertsProvider + AlertToasts** — client-side edge-triggered alert engine, rules in localStorage, toasts + bell badge + Alerts page
+- [x] **Live Economic Calendar** — EconomicCalendar widget rewritten to use `/api/calendar`; grouped by date (Today/Tomorrow/date), color-coded by source (cyan=EIA, purple=CFTC, amber=OPEC, blue=IEA, green=BH), holiday-delay flag
+- [x] **Topbar redesign** — removed search/ICE/NYMEX/CME status; PageHeader title+actions portalled in via `createPortal`; horizontal alerts bar
+- [x] **ImpactBadge, ThemeBadge, KindBadge** UI components; NewsModal with sentiment details
+- [x] **MarketMovers** moved to Analytics tab (removed from Dashboard)
+- [x] **ShippingCongestion** stays on Freight tab (removed from Dashboard)
+- [x] **WeatherRiskPanel** stays on Weather tab (removed from Dashboard)
+- [x] **Dashboard cleanup** — now 5 clean sections: alerts bar → metric tiles → price chart + news → term structure row (curves + spreads + flys) → correlation/rig count → cross-commodity/calendar
+- [x] Tanker map (AIS Phase 1) — MapLibre, heatmap, clustered markers, chokepoint counts
 
 ---
 
 ## ⬜ To Do — Free (no paid feed)
 
-- [ ] **Weather page** via Open-Meteo (free, no key) — temps, HDD/CDD, anomalies _(user has a separate plan — later)_
-- [ ] **News feed** ← _next up per plan_ (see Paid/Free note below)
-- [ ] **More EIA datasets** (key already configured):
-  - [x] ~~Days-of-supply, crude imports/exports~~ ✅ done
-  - [x] ~~Rig count (Baker Hughes via EIA, monthly)~~ ✅ done
-  - [ ] PADD-level regional stocks (replace the static regional map)
-  - [ ] Natural-gas storage — _skipped (not needed)_
-- [ ] **News sentiment — proper model** _(deferred, do later)_: replace the keyword lexicon with an ML classifier (e.g. FinBERT / a finance-tuned transformer, free & local) to label headlines bullish/bearish/neutral with real context understanding. Backend already has a clean `_classify()` seam to swap in.
-- [x] **Alerts engine (Phase 1)** — client-side, app-wide engine evaluating live data with edge-triggered (cross + re-arm) semantics; rules + fired history in localStorage; toasts + bell badge + Alerts page (create/manage rules, triggered feed). Covers price, %-move, spread, curve M1-M2, curve regime (contango↔backwardation), inventory w/w, macro (DXY/VIX), CFTC positioning, rig count.
-  - [ ] Phase 2: sentiment alerts (after the sentiment model), chokepoint/tanker alerts, server-side engine for background firing + external delivery (email/Telegram).
-- [ ] **Macro tiles** EUR/USD + US CPI — currently static (need a free FX/macro source)
-- [ ] **Economic calendar** — currently static (free sources exist but messy)
+### Alerts
+- [ ] **Wire z-score metrics into AlertsProvider** — `buildZMetrics()` exists in `lib/zmetrics.ts` but is not yet called inside `AlertsProvider`. Needs: fetch 4×1Y price history + CFTC + EIA in provider; call `buildZMetrics()`; track prev tier per metric; fire Watch/Elevated/High `FiredAlert` on tier escalation; expose `zMetrics` via context
+- [ ] **Alerts.tsx — "Statistical Anomaly Monitor" section** — display the 16 z-score metrics with current tier badges, z values, and sparkline. Group by Tier A / Tier B.
+- [ ] Phase 2: server-side alert engine + external delivery (email / Telegram / Discord)
 
-## 🚢 Tanker Intelligence (Freight page) — in progress
-- [x] **Phase 1 MVP**: aisstream.io WebSocket consumer (free, no AISHub receiver needed); in-memory tanker store (AIS type 80-89); `/api/shipping/{status,vessels,heatmap,chokepoints}`; MapLibre map replacing the Global Vessel Tracking panel — heatmap + clustered tanker markers + hover + live chokepoint counts (Hormuz, Bab-el-Mandeb, Suez, Malacca, Panama). Needs `HORIZON_AISSTREAM_API_KEY` to go live (graceful "AIS offline" without).
-- [ ] **Phase 2**: routes (AG→China etc.), 7d/30d chokepoint history (needs persistence), floating-storage detection, Physical Flow Score. Endpoints stubbed (`/routes`, `/congestion`).
-- Note: free AIS is terrestrial → good coverage near coasts/chokepoints, sparse mid-ocean. AISHub is NOT free for us (requires contributing a receiver station); aisstream.io is the free source.
+### Data / Features
+- [ ] **PADD-level regional stocks** — replace static regional map on Inventories page (EIA key already configured)
+- [ ] **Macro tiles** EUR/USD + US CPI — currently static (need a free FX/macro source, e.g. Open Exchange Rates free tier or Frankfurter API for EUR/USD)
+- [ ] **Weather page** — connect Open-Meteo (free, no key) for real temps, HDD/CDD, anomalies
+- [ ] **Gas Oil forward curve** — drop `GasOilSettle.csv` into project root to light up Gas Oil spreads/flys (currently returns 503 gracefully)
 
-## ⬜ To Do — Paid / Blocked (needs subscription)
-
-- [ ] **Freight / Baltic tanker rates** (Freight page)
-- [ ] **Port congestion / storm tracking** (AIS / satellite)
-- [ ] Remaining 3 spreads: **Gasoil-Brent, WTI-Dubai, Gas Oil-Heat** (need ICE Gas Oil / Dubai feeds)
+### Shipping Phase 2
+- [ ] 7d/30d chokepoint history (needs persistence layer)
+- [ ] Floating-storage detection (vessels stationary > 24h)
+- [ ] Route-level vessel density (AG→China etc.)
 
 ---
 
-## 🔧 Polish / Engineering (not data)
+## ⬜ To Do — Paid / Blocked
+
+- [ ] **Freight / Baltic tanker rates** (Freight page)
+- [ ] Remaining spreads: **Gasoil-Brent, WTI-Dubai, Gas Oil-Heat** (need ICE Gas Oil / Dubai feeds)
+
+---
+
+## 🔧 Polish / Engineering
 
 - [ ] Market Movers shows raw Yahoo tickers (e.g. `CL=F`) — prettify symbols
 - [ ] Code-split bundle (Vite warns: chunks > 500 kB)
@@ -83,13 +90,19 @@ commercial data subscription.
 
 ## 📡 Data Sources & Keys
 
-| Source | Powers | API key |
+| Source | Powers | Auth |
 |---|---|---|
-| **Yahoo Finance** (`query1.finance.yahoo.com/v8`) | Quotes, charts, spreads, correlations, comparison, volatility, movers | None |
-| **EIA Open Data** (`api.eia.gov/v2`) | Inventories page + Dashboard crude-stocks chart + rig count | Free — set in `backend/.env` |
-| **FinancialJuice RSS** (`feed.ashx?xy=rss`) | News feed — squawk headlines (energy-filtered, locally sentiment-tagged) | None (public RSS) |
-| **OilPrice RSS** (`oilprice.com/rss/main`) | News feed — energy articles with summaries | None (public RSS) |
-| **CFTC COT** (`publicreporting.cftc.gov` Socrata) | Trader positioning on the Crude page | None (no token) |
-| **Baker Hughes** (`rigcount.bakerhughes.com` Excel) | Rig count — NA weekly + International monthly (Inventories + Dashboard) | None (free, attribution required) |
+| **Yahoo Finance** (`query1.finance.yahoo.com`) | Live quotes, history, sparklines, forward curve contract months | None |
+| **EIA Open Data v2** (`api.eia.gov/v2`) | Inventories, imports/exports, utilization, production | Free key — `HORIZON_EIA_API_KEY` in `.env` |
+| **FinancialJuice RSS** | News feed — breaking energy squawks | None (public RSS) |
+| **OilPrice.com RSS** | News feed — energy articles with summaries | None (public RSS) |
+| **Groq API** (`api.groq.com/openai/v1`) | LLM sentiment scoring (LLaMA 3.3-70B) | Free key — `HORIZON_GROQ_API_KEY` in `.env` |
+| **Google Gemini** (`generativelanguage.googleapis.com`) | LLM sentiment fallback | Free key — `HORIZON_GEMINI_API_KEY` in `.env` (optional) |
+| **CFTC Socrata** (`publicreporting.cftc.gov`) | COT positioning — WTI, Brent, RBOB, Heating Oil | None |
+| **Baker Hughes** (`rigcount.bakerhughes.com`) | NA weekly + Intl monthly rig count | None (free, attribution required) |
+| **aisstream.io** (WebSocket) | Live AIS vessel positions, tanker map, chokepoints | Free key — `HORIZON_AISSTREAM_API_KEY` in `.env` |
+| **ICE Settlement CSV** (`LCOSettle_2(in).csv`) | Brent forward curve + spread/fly history | Local file, shipped with repo |
+| **CFTC Release Schedule** | 2026 COT release dates (holiday-adjusted) | Hard-coded (one-time scrape) |
+| **EIA Release Schedule** | 2026 Petroleum report holiday exceptions | Hard-coded (one-time scrape) |
 
-_No new API keys are required for anything built so far._
+_Secrets live in `backend/.env` — gitignored. Never commit._
