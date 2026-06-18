@@ -4,6 +4,7 @@ import type {
   EiaInventoryResponse, NewsResponse, CftcResponse, RigCountResponse, LeadLagResponse,
   VesselsResponse, ChokepointsResponse,
 } from '@/types/api';
+import type { PaperState, PaperStructure, PaperStructuresResponse, BacktestResult } from '@/types/paper';
 
 // In dev, Vite proxies /api -> http://localhost:8000 (see vite.config.ts).
 // Override for other environments via VITE_API_BASE_URL.
@@ -56,4 +57,16 @@ export const api = {
 
   calendar: (days = 60, signal?: AbortSignal) =>
     getJson<CalendarEvent[]>(`/api/calendar?days=${days}`, signal),
+
+  paperStructures: (signal?: AbortSignal) =>
+    getJson<PaperStructuresResponse>('/api/paper/structures', signal),
+
+  paperState: (refresh = false, signal?: AbortSignal) =>
+    getJson<PaperState>(`/api/paper/state?refresh=${refresh}`, signal),
+
+  paperStructure: (key: string, refresh = false, signal?: AbortSignal) =>
+    getJson<PaperStructure>(`/api/paper/${key}?refresh=${refresh}`, signal),
+
+  paperBacktest: (signal?: AbortSignal) =>
+    getJson<BacktestResult>('/api/paper/backtest/results', signal),
 };

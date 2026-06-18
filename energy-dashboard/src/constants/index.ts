@@ -38,6 +38,7 @@ export const NAV_ITEMS = [
   { id: 'inventories', label: 'Inventories', path: '/inventories', icon: 'Database' },
   { id: 'news', label: 'News', path: '/news', icon: 'Newspaper' },
   { id: 'analytics', label: 'Analytics', path: '/analytics', icon: 'BarChart3' },
+  { id: 'paper', label: 'Paper Trading', path: '/paper', icon: 'CandlestickChart' },
   { id: 'alerts', label: 'Alerts', path: '/alerts', icon: 'Bell', badge: 4 },
   { id: 'settings', label: 'Settings', path: '/settings', icon: 'Settings' },
 ] as const;
