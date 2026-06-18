@@ -11,19 +11,32 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # Crucial for git subtree to work properly
 
       # 1. Sync Frontend Space
       - name: Push Frontend to HF
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          git subtree push --prefix=energy-dashboard https://YashYeole:$HF_TOKEN@huggingface.co/spaces/YashYeole/dashboard_frontend main --force
+          # Configure dummy git user for the temporary repo
+          git config --global user.email "actions@github.com"
+          git config --global user.name "GitHub Actions"
+          
+          # Move into the frontend folder, turn it into its own git repo, and push
+          cd energy-dashboard
+          git init -b main
+          git add .
+          git commit -m "Deploy Frontend"
+          git push https://YashYeole:$HF_TOKEN@huggingface.co/spaces/YashYeole/dashboard_frontend main --force
 
       # 2. Sync Backend Space
       - name: Push Backend to HF
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          git subtree push --prefix=backend https://YashYeole:$HF_TOKEN@huggingface.co/spaces/YashYeole/horizon_backend main --force
+          # Go back to root, move into backend folder, turn it into a git repo, and push
+          cd ..
+          cd backend
+          git init -b main
+          git add .
+          git commit -m "Deploy Backend"
+          git push https://YashYeole:$HF_TOKEN@huggingface.co/spaces/YashYeole/horizon_backend main --force
