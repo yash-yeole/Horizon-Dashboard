@@ -79,6 +79,30 @@ class Settings(BaseSettings):
     # Drop vessels not heard from in this many seconds.
     ais_vessel_ttl: float = 3600.0
 
+    # Paper-trading / strategy engine (Phase 7). The engine is vendored into
+    # backend/strategy; it reads the precomputed daily fair-value parquet cache
+    # (refreshed offline by refresh_fairvalue.py) and the live 15-min bar DB.
+    paper_strategy_dir: str = str(_PROJECT_ROOT / "backend" / "strategy")
+    paper_cache_ttl: float = 15.0
+    # Unified |z| thresholds (live engine == backtest). STOP widened to 2.5 to give
+    # adverse room so normal intraday oscillation around the daily anchor doesn't
+    # stop out; Z_EXTREME sits above STOP as the dislocation/no-entry guard.
+    paper_entry: float = 1.0
+    paper_exit: float = 0.5
+    paper_stop: float = 2.5
+    paper_z_extreme: float = 3.0
+
+    # Live decision engine: "rolling" (price-only rolling-mean z, intraday-native,
+    # completes round-trips on the 15-min bars) or "model" (regime daily fair value).
+    # Rolling won the head-to-head on the live intraday window; the model fair value
+    # / regime / OOD context is still computed and shown alongside as a sanity overlay.
+    paper_engine: str = "rolling"
+    paper_roll_lookback: int = 16   # 16 x 15-min bars = a round 4-hour window
+    paper_roll_entry: float = 2.0
+    paper_roll_exit: float = 0.5
+    paper_roll_stop: float = 3.0
+    paper_roll_z_extreme: float = 3.5
+
     # CORS — frontend dev origins
     cors_origins: list[str] = [
         "http://localhost:5173",

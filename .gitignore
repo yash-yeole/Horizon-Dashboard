@@ -10,6 +10,9 @@ backend/.env
 backend/.eia_cache.json
 backend/.bh_cache/
 backend/.news_store.json
+# SQLite WAL/shm sidecars (transient — regenerated at runtime)
+*.db-wal
+*.db-shm
 
 # ── Node / frontend ──────────────────────────────────────
 **/node_modules/
@@ -31,3 +34,22 @@ Thumbs.db
 # ── Stray output files ───────────────────────────────────
 /killing
 /nothing
+
+# ── Large raw data & archives (NEVER commit — multi-GB) ──
+# Raw 1-min/15-min CSV feeds live in the canonical OneDrive\Regime\data; the repo
+# only needs the small trained-model parquets + the backend cache parquets.
+/data/
+*.zip
+
+# ── Regime model project: keep ONLY the trained model ────
+# Regime/ is a working copy of the model project. Commit the trained model
+# artifacts (model/cache parquets, pipeline.py); ignore its bulky raw data,
+# notebooks, dev strategy copy and booklets.
+/Regime/*
+!/Regime/model
+/Regime/model/__pycache__/
+/Regime/model/cache/__pycache__/
+
+# ── Local analysis tooling & snapshots (not part of the app) ─
+/analysis/
+/_snapshots/

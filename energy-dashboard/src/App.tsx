@@ -10,6 +10,7 @@ import { Weather } from '@/pages/Weather';
 import { Inventories } from '@/pages/Inventories';
 import { News } from '@/pages/News';
 import { Analytics } from '@/pages/Analytics';
+import { PaperTrading } from '@/pages/PaperTrading';
 import { Alerts } from '@/pages/Alerts';
 import { Settings } from '@/pages/Settings';
 
@@ -28,6 +29,7 @@ export default function App() {
           <Route path="/inventories" element={<Inventories />} />
           <Route path="/news" element={<News />} />
           <Route path="/analytics" element={<Analytics />} />
+          <Route path="/paper" element={<PaperTrading />} />
           <Route path="/alerts" element={<Alerts />} />
           <Route path="/settings" element={<Settings />} />
         </Route>

@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
-from .routers import calendar, cftc, curve, eia, leadlag, news, quotes, rigcount, shipping
+from .routers import calendar, cftc, curve, eia, leadlag, news, paper, quotes, rigcount, shipping
 from .services import shipping as shipping_service
 
 app = FastAPI(
@@ -28,6 +28,7 @@ app.include_router(cftc.router)
 app.include_router(rigcount.router)
 app.include_router(leadlag.router)
 app.include_router(shipping.router)
+app.include_router(paper.router)
 
 
 @app.on_event("startup")

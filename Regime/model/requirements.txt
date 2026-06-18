@@ -1,0 +1,12 @@
+pandas
+numpy
+scikit-learn
+statsmodels
+pyarrow
+matplotlib
+python-dotenv
+yfinance
+fredapi
+requests
+jupyter
+ipykernel
