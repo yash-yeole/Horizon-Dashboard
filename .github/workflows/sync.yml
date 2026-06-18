@@ -1,0 +1,29 @@
+name: Sync Frontend and Backend to Hugging Facename: Sync Frontend and Backend to Hugging Face
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # 1. Sync Frontend Space
+      - name: Push Frontend to HF
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        # This filters and pushes only your frontend directory to the frontend Space
+        run: |
+          git subtree push --prefix=energy-dashboard https://username:$HF_TOKEN@huggingface.co/spaces/YashYeole/dashboard_frontend main --force
+
+      # 2. Sync Backend Space
+      - name: Push Backend to HF
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        # This filters and pushes only your backend directory to the backend Space
+        run: |
+          git subtree push --prefix=backend https://username:$HF_TOKEN@huggingface.co/spaces/YashYeole/horizon_backend main --forceforce
