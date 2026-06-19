@@ -1,45 +1,26 @@
-name: Sync Frontend and Backend to Hugging Face
+name: Sync to Hugging Face Hub
 
 on:
   push:
     branches: [main]
-  workflow_dispatch:
 
 jobs:
-  deploy:
+  sync-frontend:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v6
+      - uses: huggingface/hub-sync@v0.1.0
+        with:
+          github_repo_id: ${{ github.repository }}
+          huggingface_repo_id: YashYeole/horizon-frontend
+          hf_token: ${{ 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 }}
 
-      # 1. Sync Frontend Space
-      - name: Push Frontend to HF
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: |
-          git config --global user.email "actions@github.com"
-          git config --global user.name "GitHub Actions"
-          
-          cd energy-dashboard
-          git init -b main
-          git add .
-          git commit -m "Deploy Frontend"
-          
-          # Attempt to push to 'main'. If it fails, try 'master'.
-          git push https://YashYeole:$HF_TOKEN@huggingface.co/spaces/YashYeole/dashboard_frontend main --force || \
-          git push https://YashYeole:$HF_TOKEN@huggingface.co/spaces/YashYeole/dashboard_frontend main:master --force
-
-      # 2. Sync Backend Space
-      - name: Push Backend to HF
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: |
-          cd ..
-          cd backend
-          git init -b main
-          git add .
-          git commit -m "Deploy Backend"
-          
-          # Attempt to push to 'main'. If it fails, try 'master'.
-          git push https://YashYeole:$HF_TOKEN@huggingface.co/spaces/YashYeole/horizon_backend main --force || \
-          git push https://YashYeole:$HF_TOKEN@huggingface.co/spaces/YashYeole/horizon_backend main:master --force
+  sync-backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: huggingface/hub-sync@v0.1.0
+        with:
+          github_repo_id: ${{ github.repository }}
+          huggingface_repo_id: YashYeole/horizon-backend
+          hf_token: ${{ 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 }}
