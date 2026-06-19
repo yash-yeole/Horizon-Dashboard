@@ -1,26 +1,20 @@
-name: Sync to Hugging Face Hub
-
+name: Sync to Hugging Face
 on:
   push:
     branches: [main]
 
 jobs:
-  sync-frontend:
+  sync:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: huggingface/hub-sync@v0.1.0
         with:
-          github_repo_id: ${{ github.repository }}
-          huggingface_repo_id: YashYeole/horizon-frontend
-          hf_token: ${{ secrets.HF_TOKEN }}  # <--- THIS IS THE ONLY WAY TO DO IT
-
-  sync-backend:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - uses: huggingface/hub-sync@v0.1.0
-        with:
-          github_repo_id: ${{ github.repository }}
-          huggingface_repo_id: YashYeole/horizon-backend
-          hf_token: ${{ secrets.HF_TOKEN }}  # <--- AND HERE
+          fetch-depth: 0
+      - name: Push to HF
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          # Sync Frontend
+          git push https://YashYeole:$HF_TOKEN@huggingface.co/spaces/YashYeole/horizon-frontend main --force
+          # Sync Backend
+          git push https://YashYeole:$HF_TOKEN@huggingface.co/spaces/YashYeole/horizon-backend main --force
