@@ -53,3 +53,11 @@ Thumbs.db
 # ── Local analysis tooling & snapshots (not part of the app) ─
 /analysis/
 /_snapshots/
+
+
+*.pptx
+*.parquet
+*.db
+Regime/model/cache/
+backend/strategy/cache/
+backend/strategy/files/
