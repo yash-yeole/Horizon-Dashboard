@@ -151,6 +151,19 @@ export interface BacktestTrade {
   hold_bars: number | null;
 }
 
+// position still open at the end of the cached history (e.g. rolling c2-c3 finishing
+// mid-trade) — a slimmer shape than the live PaperOpenPosition.
+export interface BacktestOpenPosition {
+  key: string;
+  label: string;
+  direction: string;
+  entry_ts: string;
+  entry_price: number;
+  target: number;
+  stop: number;
+  regime: string | null;
+}
+
 export interface BacktestResult {
   available: boolean;
   generated_at?: string | null;
@@ -162,7 +175,7 @@ export interface BacktestResult {
   trades: BacktestTrade[];        // ALL trades, newest first (frontend sizes + caps)
   trades_shown?: number;
   display_cap?: number;
-  open_positions: PaperOpenPosition[];
+  open_positions: BacktestOpenPosition[];
 }
 
 export interface PaperStructureListItem {

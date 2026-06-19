@@ -711,10 +711,27 @@ function BacktestBreakdown({ bt }: { bt: BacktestResult }) {
             </div>
           </div>
         ))}
-        {bt.open_positions.length === 0 && (
+        {bt.open_positions.length === 0 ? (
           <div className="rounded border border-[#1f2230] bg-[#0e1016] p-3 text-center text-[11px] text-slate-500">
             Flat at end of history — no open positions
           </div>
+        ) : (
+          bt.open_positions.map((op) => (
+            <div key={op.key} className="rounded border border-amber-500/30 bg-amber-500/5 p-3 text-[11px]">
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-slate-200">{op.label}</span>
+                <span className={cn('mono font-semibold', op.direction === 'LONG' ? 'text-green-400' : 'text-red-400')}>
+                  {op.direction} · open
+                </span>
+              </div>
+              <div className="mt-1.5 grid grid-cols-2 gap-x-3 gap-y-1 text-slate-400">
+                <span>Entry <span className="mono text-slate-300">{op.entry_price?.toFixed(3)}</span></span>
+                <span>Target <span className="mono text-slate-300">{op.target?.toFixed(3)}</span></span>
+                <span>Stop <span className="mono text-slate-300">{op.stop?.toFixed(3)}</span></span>
+                <span className="col-span-2 text-slate-600">since {ymd(op.entry_ts)} · {op.regime ?? '?'}</span>
+              </div>
+            </div>
+          ))
         )}
       </div>
     </Card>
