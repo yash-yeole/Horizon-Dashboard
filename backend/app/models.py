@@ -232,3 +232,85 @@ class RigCountResponse(CamelModel):
     intl_summary: list[RigItem] = []  # International, Worldwide
     intl_regions: list[RigItem] = []  # by region
     ww_history: list[RigSeries] = []  # Worldwide + regions, monthly
+
+
+# ── Inventory-release impact (research/inventory-impact framework (modules s01-s08)) ──
+class ReleaseScenario(CamelModel):
+    actual: float                 # hypothetical EIA print (M bbl)
+    surprise_vs_consensus: float
+    surprise_vs_ours: float       # vs OUR forecast (the model's expected number)
+    lean: str                     # surprise direction vs consensus: bullish | neutral | bearish
+    label: str                    # "big draw" | "in-line" | "build" ...
+
+
+class DriverFactor(CamelModel):
+    name: str
+    std_beta: float               # standardized impact on daily WTI return (war regime)
+    p_value: float
+    significant: bool
+
+
+class NewsTheme(CamelModel):
+    theme: str
+    count: int
+
+
+class ForecastDriver(CamelModel):
+    label: str                    # human-readable feature, e.g. "Supply/demand balance (last wk)"
+    value: float
+    unit: str = "M bbl"
+
+
+class InventoryForecast(CamelModel):
+    """OUR model's expected EIA crude stock change for the upcoming release."""
+    target_week_ending: str = ""  # YYYY-MM-DD (the week the print covers)
+    as_of_week: str = ""          # latest EIA report week-ending used to build features
+    predicted_change: float = 0.0 # M bbl (our number)
+    sd: float = 0.0               # 1-sigma residual band
+    r2: float = 0.0               # in-sample
+    oos_r2: float = 0.0           # walk-forward / hold-out out-of-sample
+    drivers: list[ForecastDriver] = []
+    note: str = ""
+
+
+class ProductEffect(CamelModel):
+    """Where an inventory surprise actually shows up in the products complex."""
+    product: str                  # "RBOB (gasoline)" | "Heating oil (distillate)"
+    channel: str                  # "gasoline stock surprise" ...
+    beta: float                   # release-day reaction sensitivity
+    p_value: float
+    significant: bool
+    spread: str                   # "RBOB-WTI crack" ...
+    lean: str                     # bullish | bearish | neutral
+    note: str = ""
+
+
+class ReleaseImpactResponse(CamelModel):
+    series: str = "crude"
+    instrument: str = "WTI"        # the responding barrel (EIA measures US crude)
+    next_release_date: str = ""    # YYYY-MM-DD
+    time_et: str = "10:30"
+    days_until: int = 0
+    is_delayed: bool = False
+    # surprise inputs (M bbl)
+    consensus: float | None = None
+    previous: float | None = None
+    our_forecast: InventoryForecast | None = None   # the model's expected number
+    our_surprise_vs_consensus: float | None = None  # our_forecast - consensus
+    # the call
+    bias: str = "neutral"          # bullish | bearish | neutral
+    confidence: str = "low"        # low | medium | high
+    headline: str = ""
+    reasoning: str = ""
+    # scenarios + factors
+    scenarios: list[ReleaseScenario] = []
+    inventory_beta: float = 0.0    # %/Mbbl on WTI (EIA - consensus), release-day
+    top_factors: list[DriverFactor] = []
+    spread_focus: str = ""
+    product_effects: list[ProductEffect] = []
+    news_themes: list[NewsTheme] = []
+    headlines: list[str] = []
+    framework: str = ""
+    # meta
+    as_of: float = 0.0
+    stale: bool = False

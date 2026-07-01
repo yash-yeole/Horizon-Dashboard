@@ -262,3 +262,79 @@ export interface CalendarEvent {
   description: string;
   isDelayed: boolean;
 }
+
+// ── Inventory-release impact ──
+export interface ReleaseScenario {
+  actual: number;
+  surpriseVsConsensus: number;
+  surpriseVsOurs: number;
+  lean: 'bullish' | 'neutral' | 'bearish';
+  label: string;
+}
+
+export interface DriverFactor {
+  name: string;
+  stdBeta: number;
+  pValue: number;
+  significant: boolean;
+}
+
+export interface NewsTheme {
+  theme: string;
+  count: number;
+}
+
+export interface ForecastDriver {
+  label: string;
+  value: number;
+  unit: string;
+}
+
+export interface InventoryForecast {
+  targetWeekEnding: string;
+  asOfWeek: string;
+  predictedChange: number;
+  sd: number;
+  r2: number;
+  oosR2: number;
+  drivers: ForecastDriver[];
+  note: string;
+}
+
+export interface ProductEffect {
+  product: string;
+  channel: string;
+  beta: number;
+  pValue: number;
+  significant: boolean;
+  spread: string;
+  lean: 'bullish' | 'neutral' | 'bearish';
+  note: string;
+}
+
+export interface ReleaseImpactResponse {
+  series: string;
+  instrument: string;
+  nextReleaseDate: string;
+  timeEt: string;
+  daysUntil: number;
+  isDelayed: boolean;
+  consensus: number | null;
+  previous: number | null;
+  ourForecast: InventoryForecast | null;
+  ourSurpriseVsConsensus: number | null;
+  bias: 'bullish' | 'bearish' | 'neutral';
+  confidence: 'low' | 'medium' | 'high';
+  headline: string;
+  reasoning: string;
+  scenarios: ReleaseScenario[];
+  inventoryBeta: number;
+  topFactors: DriverFactor[];
+  spreadFocus: string;
+  productEffects: ProductEffect[];
+  newsThemes: NewsTheme[];
+  headlines: string[];
+  framework: string;
+  asOf: number;
+  stale: boolean;
+}

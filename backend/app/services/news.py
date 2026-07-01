@@ -2,8 +2,10 @@
 
 No paid API and no scraping: we read the official RSS feed
 (https://www.financialjuice.com/feed.ashx?xy=rss), keep only energy-relevant
-headlines, and assign sentiment/category/importance with a small finance-tuned
-keyword lexicon. All deterministic and offline once the feed is fetched.
+headlines, and score sentiment with FinBERT (ProsusAI/finbert, local CPU
+inference). Category/importance and the theme tags are derived from a small
+finance-tuned keyword lexicon. If FinBERT can't load, scoring falls back to the
+offline lexicon, so the feed always works once fetched.
 """
 from __future__ import annotations
 
@@ -21,7 +23,7 @@ import httpx
 from ..config import settings
 from ..models import NewsItem
 from .sentiment import event_key, score_article
-from .sentiment_llm import active_provider, score_batch as llm_score_batch
+from .sentiment_finbert import available as finbert_available, score_batch as finbert_score_batch
 
 # Persistent scored-news memory (queue). Keyed by event_key; survives restarts.
 # Doubles as the offline feed and avoids re-scoring already-seen headlines.
@@ -101,14 +103,14 @@ def _apply_score(item: NewsItem, res) -> None:
 
 
 async def _score_items(items: list[NewsItem]) -> None:
-    """Score new items in place — one Gemini batch call, lexicon fallback."""
+    """Score new items in place — FinBERT (one batch), offline lexicon fallback."""
     if not items:
         return
     results = None
-    if active_provider() is not None:
+    if finbert_available():
         try:
-            results = await llm_score_batch([f"{i.headline}. {i.summary}"[:300] for i in items])
-        except Exception:  # noqa: BLE001 — any LLM failure → offline lexicon
+            results = await finbert_score_batch([(i.headline, i.summary) for i in items])
+        except Exception:  # noqa: BLE001 — any FinBERT failure → offline lexicon
             results = None
     if results is None:
         results = [score_article(i.headline, i.summary) for i in items]

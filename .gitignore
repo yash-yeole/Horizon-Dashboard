@@ -10,6 +10,8 @@ backend/.env
 backend/.eia_cache.json
 backend/.bh_cache/
 backend/.news_store.json
+# Runtime caches written by the app (regenerated on demand)
+backend/data/
 # SQLite WAL/shm sidecars (transient — regenerated at runtime)
 *.db-wal
 *.db-shm
@@ -40,6 +42,8 @@ Thumbs.db
 # only needs the small trained-model parquets + the backend cache parquets.
 /data/
 *.zip
+*.tar.gz
+*.tgz
 
 # ── Regime model project: keep ONLY the trained model ────
 # Regime/ is a working copy of the model project. Commit the trained model
@@ -50,6 +54,8 @@ Thumbs.db
 /Regime/model/__pycache__/
 /Regime/model/cache/__pycache__/
 
-# ── Local analysis tooling & snapshots (not part of the app) ─
-/analysis/
-/_snapshots/
+# ── Local research tooling (not part of the app) ─────────
+# research/ = inventory-impact (was rough_work) + spread-models (was analysis).
+# Local analysis IP; the production versions live in backend/app. Kept out of the
+# repo like the old /analysis/ rule. Flip to committed by removing this line.
+/research/

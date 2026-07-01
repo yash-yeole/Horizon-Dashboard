@@ -38,7 +38,7 @@ commercial data subscription.
 - [x] **Analytics panels** (multiline, area, correlation, spreads) — live
 - [x] Removed unused "Yahoo Live" status box from Dashboard
 - [x] **News feed** — merged **FinancialJuice + OilPrice** RSS (free, no key), energy-keyword filtered, category tagging, deduped & sorted newest-first, modal with article links (Dashboard feed + News page). Resilient: if one feed is down/rate-limited, the other still serves.
-  - [x] Sentiment: **interim keyword lexicon** (placeholder — works, but to be replaced)
+  - [x] Sentiment: **FinBERT** (ProsusAI/finbert, local CPU) scores each headline's impact/confidence; the keyword lexicon now only supplies theme/product-divergence tags + acts as offline fallback
 - [x] **CFTC Commitments of Traders** — free Socrata API (no token); WTI, Brent (NYMEX Last Day), RBOB, Heating Oil positioning by trader class + weekly net-position history; "Trader Positioning" section on the Crude page
 
 ---
@@ -52,7 +52,7 @@ commercial data subscription.
   - [x] ~~Rig count (Baker Hughes via EIA, monthly)~~ ✅ done
   - [ ] PADD-level regional stocks (replace the static regional map)
   - [ ] Natural-gas storage — _skipped (not needed)_
-- [ ] **News sentiment — proper model** _(deferred, do later)_: replace the keyword lexicon with an ML classifier (e.g. FinBERT / a finance-tuned transformer, free & local) to label headlines bullish/bearish/neutral with real context understanding. Backend already has a clean `_classify()` seam to swap in.
+- [x] ~~**News sentiment — proper model**: replace the keyword lexicon with an ML classifier (FinBERT, free & local).~~ ✅ done — `services/sentiment_finbert.py` scores headlines pos/neg/neutral → signed `impact` + `confidence`; wired into `news.py` (FinBERT primary, lexicon fallback), no API key. Theme tags + product-divergence routing retained from the lexicon, so the gauge/bars/badges are unchanged.
 - [x] **Alerts engine (Phase 1)** — client-side, app-wide engine evaluating live data with edge-triggered (cross + re-arm) semantics; rules + fired history in localStorage; toasts + bell badge + Alerts page (create/manage rules, triggered feed). Covers price, %-move, spread, curve M1-M2, curve regime (contango↔backwardation), inventory w/w, macro (DXY/VIX), CFTC positioning, rig count.
   - [ ] Phase 2: sentiment alerts (after the sentiment model), chokepoint/tanker alerts, server-side engine for background firing + external delivery (email/Telegram).
 - [ ] **Macro tiles** EUR/USD + US CPI — currently static (need a free FX/macro source)

@@ -14,6 +14,7 @@ import {
 } from '@/components/widgets/Panels';
 import { NewsModal } from '@/components/widgets/NewsModal';
 import { RigCount } from '@/components/widgets/RigCount';
+import { ReleaseImpactCard } from '@/components/widgets/ReleaseImpact';
 import { HERO_METRICS } from '@/data/market';
 import { correlationMatrix, CORRELATION_ASSETS } from '@/data/series';
 import { useQuotes, mergeQuotes } from '@/hooks/useQuotes';
@@ -62,6 +63,9 @@ export function Dashboard() {
         <div className="h-[320px] xl:col-span-2"><LivePriceChart defaultId="brent" /></div>
         <div className="h-[320px]"><NewsFeed limit={5} onSelect={setSelectedNews} /></div>
       </div>
+
+      {/* EIA release impact — compact call, links to the full analysis on Inventories */}
+      <ReleaseImpactCard />
 
       {/* Term structure: forward curve · calendar spreads · butterflies (full width) */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">

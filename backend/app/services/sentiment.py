@@ -137,10 +137,9 @@ class LexiconScorer:
         # longest phrases first so "output cut" beats "cut"
         self._lex = sorted(LEXICON, key=lambda e: -max(len(p) for p in e[0]))
 
-    def score(self, title: str, summary: str, source: str = "") -> SentimentResult:
-        text = f"{title} {summary}".lower()
-
-        matched: list[tuple[str, float, str, bool]] = []  # (phrase, signed_weight, theme, product)
+    def _match(self, text: str) -> list[tuple[str, float, str, bool]]:
+        """Lexicon hits over lowercased text: (phrase, signed_weight, theme, product)."""
+        matched: list[tuple[str, float, str, bool]] = []
         for phrases, weight, theme, product in self._lex:
             for p in phrases:
                 idx = text.find(p)
@@ -157,6 +156,28 @@ class LexiconScorer:
                         w = w * 1.2
                 matched.append((p, w, theme, product))
                 break  # count each lexicon entry at most once
+        return matched
+
+    def metadata(self, title: str, summary: str) -> tuple[str, list[str], bool, str, list[str]]:
+        """Categorization only: (theme_primary, themes_secondary, product_divergence,
+        kind, drivers). Polarity (impact/confidence) is deliberately NOT computed here
+        — FinBERT supplies that. This lets a non-lexicon scorer reuse the theme tagging
+        and product-divergence routing without importing lexicon internals."""
+        text = f"{title} {summary}".lower()
+        matched = self._match(text)
+        if not matched:
+            return "Macro", [], False, self._kind(text), []
+        matched_sorted = sorted(matched, key=lambda m: -abs(m[1]))
+        theme_primary = matched_sorted[0][2]
+        themes_secondary = list(dict.fromkeys(
+            m[2] for m in matched_sorted[1:] if m[2] != theme_primary))
+        product_divergence = any(prod for _, _, _, prod in matched)
+        drivers = [p for p, _, _, _ in matched_sorted[:4]]
+        return theme_primary, themes_secondary, product_divergence, self._kind(text), drivers
+
+    def score(self, title: str, summary: str, source: str = "") -> SentimentResult:
+        text = f"{title} {summary}".lower()
+        matched = self._match(text)
 
         if not matched:
             return SentimentResult(impact=0.0, confidence=0.2, theme_primary="Macro",
@@ -194,11 +215,20 @@ class LexiconScorer:
 
 
 # ---- swap-able singleton (change this one line for the LLM scorer later) ----
-scorer: Scorer = LexiconScorer()
+_lexicon = LexiconScorer()
+scorer: Scorer = _lexicon
 
 
 def score_article(title: str, summary: str, source: str = "") -> SentimentResult:
     return scorer.score(title, summary, source)
+
+
+def classify_metadata(title: str, summary: str) -> tuple[str, list[str], bool, str, list[str]]:
+    """Scorer-agnostic categorization: (theme_primary, themes_secondary,
+    product_divergence, kind, drivers). Used by the FinBERT scorer to keep theme
+    tags + product routing while FinBERT supplies the polarity. Lexicon internals
+    stay private — only this function and ``score_article`` are public."""
+    return _lexicon.metadata(title, summary)
 
 
 _STOP = {"the", "a", "an", "of", "to", "in", "on", "for", "and", "or", "as", "at", "by",

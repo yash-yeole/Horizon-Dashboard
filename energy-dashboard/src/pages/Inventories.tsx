@@ -1,5 +1,6 @@
 import { PageHeader } from '@/components/widgets/PageHeader';
 import { ChartCard } from '@/components/widgets/ChartCard';
+import { ReleaseImpactSection } from '@/components/widgets/ReleaseImpact';
 import { Card, CardHeader } from '@/components/ui/Card';
 import { MapPlaceholder } from '@/components/widgets/MapPlaceholder';
 import { Progress, SectionTitle } from '@/components/ui';
@@ -171,6 +172,8 @@ export function Inventories() {
           </div>
         }
       />
+
+      <ReleaseImpactSection />
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         {cards.map((w) => (

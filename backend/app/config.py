@@ -2,8 +2,9 @@ from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-# Project root = D:\Dashboard_FF (config.py -> app -> backend -> root).
+# Resolved from this file's location: config.py -> app -> backend -> repo root.
 _PROJECT_ROOT = Path(__file__).resolve().parents[2]
+_CURVES_DIR = Path(__file__).resolve().parents[1] / "curves"
 
 
 class Settings(BaseSettings):
@@ -28,11 +29,14 @@ class Settings(BaseSettings):
     eia_base_url: str = "https://api.eia.gov/v2"
     eia_cache_ttl: float = 3600.0
 
-    # Forward-curve settlement CSVs (ICE). Brent ships with the repo; Gas Oil is
-    # also ICE (not on Yahoo) so it reads from a CSV too — drop the file in and
-    # it lights up. WTI/Heating Oil/RBOB curves come from Yahoo contract months.
-    brent_curve_csv: str = str(_PROJECT_ROOT / "LCOSettle_2(in).csv")
-    gasoil_curve_csv: str = str(_PROJECT_ROOT / "GasOilSettle.csv")
+    # Forward-curve settlement snapshots for the ICE curves that aren't on Yahoo:
+    # Brent + Gas Oil. Small daily-settle CSVs generated offline from the raw
+    # Regime/data feeds by refresh_curves.py and committed under backend/curves/
+    # (inside the Docker build context), so the deployed dashboard renders them even
+    # though the raw feeds never leave local. WTI/Heating Oil/RBOB are live from
+    # Yahoo contract months (see app/services/curve.py).
+    brent_curve_csv: str = str(_CURVES_DIR / "brent_settle.csv")
+    gasoil_curve_csv: str = str(_CURVES_DIR / "gasoil_settle.csv")
     curve_cache_ttl: float = 300.0
 
     # News — FinancialJuice public RSS feed (free, no key). Filtered to energy
@@ -54,9 +58,18 @@ class Settings(BaseSettings):
 
     # Groq — free-tier, fast, OpenAI-compatible. Set via HORIZON_GROQ_API_KEY
     # (free key at https://console.groq.com/keys). Preferred over Gemini when set.
+    # NOTE: the Groq/Gemini LLM scorer is no longer in the live news path (FinBERT
+    # is the scorer). These stay for the swap-able boundary / future use.
     groq_api_key: str = ""
     groq_model: str = "llama-3.3-70b-versatile"
     groq_base_url: str = "https://api.groq.com/openai/v1"
+
+    # FinBERT — local financial-sentiment model (ProsusAI/finbert) and the LIVE
+    # polarity scorer for news. Runs on CPU via transformers (deps in
+    # requirements.txt); no API key required. Set HORIZON_FINBERT_ENABLED=false to
+    # fall back to the offline keyword lexicon.
+    finbert_enabled: bool = True
+    finbert_model: str = "ProsusAI/finbert"
 
     # CFTC Commitments of Traders — free Socrata API, no token. Disaggregated
     # Futures-Only dataset. Weekly data (released Fridays), so cache long.
@@ -82,7 +95,7 @@ class Settings(BaseSettings):
     # Paper-trading / strategy engine (Phase 7). The engine is vendored into
     # backend/strategy; it reads the precomputed daily fair-value parquet cache
     # (refreshed offline by refresh_fairvalue.py) and the live 15-min bar DB.
-    paper_strategy_dir: str = str(_PROJECT_ROOT / "backend" / "strategy")
+    paper_strategy_dir: str = str(Path(__file__).resolve().parent.parent / "strategy")
     paper_cache_ttl: float = 15.0
     # Unified |z| thresholds (live engine == backtest). STOP widened to 2.5 to give
     # adverse room so normal intraday oscillation around the daily anchor doesn't

@@ -2,7 +2,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
-from .routers import calendar, cftc, curve, eia, leadlag, news, paper, quotes, rigcount, shipping
+from .routers import (
+    calendar, cftc, curve, eia, leadlag, news, paper, quotes, release_impact, rigcount, shipping,
+)
 from .services import shipping as shipping_service
 
 app = FastAPI(
@@ -14,6 +16,10 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
+    # Allow any Hugging Face Space subdomain (the deployed frontend lives at
+    # https://<owner>-<space>.hf.space) so the browser doesn't block cross-origin
+    # API calls. Local dev origins stay in settings.cors_origins above.
+    allow_origin_regex=r"https://[a-z0-9-]+\.hf\.space",
     allow_credentials=True,
     allow_methods=["GET"],
     allow_headers=["*"],
@@ -29,6 +35,7 @@ app.include_router(rigcount.router)
 app.include_router(leadlag.router)
 app.include_router(shipping.router)
 app.include_router(paper.router)
+app.include_router(release_impact.router)
 
 
 @app.on_event("startup")

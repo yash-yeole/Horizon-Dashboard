@@ -10,17 +10,26 @@ router = APIRouter(prefix="/api", tags=["rigcount"])
 
 # Baker Hughes data is weekly (NA) / monthly (intl) and the download is ~8 MB,
 # so we fetch once, persist the parsed result, and only re-pull on ?refresh=true.
+# The runtime cache is gitignored/ephemeral; a committed seed (backend/seed/) ships
+# in the Docker image so the deployed backend serves rig count immediately instead
+# of hanging on a live Baker Hughes fetch (their site is slow/blocked from cloud
+# hosts). Regenerate the seed offline with: python backend/refresh_rigcount.py
 _CACHE_FILE = Path(__file__).resolve().parents[2] / ".bh_cache" / "rigcount.json"
+_SEED_FILE = Path(__file__).resolve().parents[2] / "seed" / "rigcount.json"
 _store: dict | None = None
 
 
 def _load() -> dict | None:
     global _store
-    if _store is None and _CACHE_FILE.exists():
-        try:
-            _store = json.loads(_CACHE_FILE.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
-            _store = None
+    if _store is None:
+        # Runtime cache (freshest, from a live refresh) wins over the shipped seed.
+        for f in (_CACHE_FILE, _SEED_FILE):
+            if f.exists():
+                try:
+                    _store = json.loads(f.read_text(encoding="utf-8"))
+                    break
+                except (OSError, ValueError):
+                    continue
     return _store
 
 

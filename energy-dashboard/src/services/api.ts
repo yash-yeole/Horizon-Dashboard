@@ -1,6 +1,6 @@
 import type {
   QuotesResponse, HistoryResponse, QuoteGroup, ApiQuote, CurveResponse, CurveCompare,
-  CurveStructureResponse, CalendarEvent,
+  CurveStructureResponse, CalendarEvent, ReleaseImpactResponse,
   EiaInventoryResponse, NewsResponse, CftcResponse, RigCountResponse, LeadLagResponse,
   VesselsResponse, ChokepointsResponse,
 } from '@/types/api';
@@ -57,6 +57,9 @@ export const api = {
 
   calendar: (days = 60, signal?: AbortSignal) =>
     getJson<CalendarEvent[]>(`/api/calendar?days=${days}`, signal),
+
+  releaseImpact: (signal?: AbortSignal) =>
+    getJson<ReleaseImpactResponse>('/api/release-impact', signal),
 
   paperStructures: (signal?: AbortSignal) =>
     getJson<PaperStructuresResponse>('/api/paper/structures', signal),

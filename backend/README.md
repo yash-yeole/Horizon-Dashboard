@@ -1,3 +1,12 @@
+---
+title: Horizon Backend
+emoji: ⚡
+colorFrom: blue
+colorTo: green
+sdk: docker
+pinned: false
+---
+
 # HORIZON Market Data API
 
 Thin FastAPI proxy + in-memory cache over Yahoo Finance for the HORIZON energy terminal.

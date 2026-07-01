@@ -16,7 +16,8 @@ for the dashboard's Backtest view:
   * combined equity curve in dollars, replayed chronologically by exit time
   * summary (n_trades, win_rate, net_pnl_usd) overall and per structure
   * the trade blotter (newest first, capped) tagged with the instrument label
-  * open positions (none here — the cached run held nothing open at the end)
+  * open positions still held at the end of the data (the rolling c2-c3 structures
+    typically finish mid-trade), read from the summary and tagged with the label
 """
 from __future__ import annotations
 
@@ -163,6 +164,12 @@ def get_backtest() -> dict:
     with open(_SUMMARY_PATH) as f:
         meta = json.load(f)
 
+    open_positions = []
+    for key, sm in meta.get("structures", {}).items():
+        op = sm.get("open_position")
+        if op:
+            open_positions.append({"key": key, "label": sm.get("label", key), **op})
+
     return {
         "available": True,
         "generated_at": meta.get("generated_at"),
@@ -185,5 +192,5 @@ def get_backtest() -> dict:
         "trades": blotter,
         "trades_shown": min(_MAX_TRADES, len(blotter)),
         "display_cap": _MAX_TRADES,
-        "open_positions": [],
+        "open_positions": open_positions,
     }

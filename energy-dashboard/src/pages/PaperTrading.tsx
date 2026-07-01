@@ -17,6 +17,39 @@ const ORDER = ['wti_cal', 'wti_c2c3', 'wti_fly', 'brent_cal', 'brent_c2c3', 'bre
 // WTI (CL) and Brent (CO) futures are 1,000 bbl/contract — converts $/bbl spread PnL to $.
 const CONTRACT_BBL = 1000;
 
+// Approx initial margin ($) to hold one crude calendar/spread contract. Used to cap
+// position size: the risk-to-stop sizer divides the risk budget by the entry→stop
+// distance, but these structures run extremely tight stops (median |stop-entry| ≈
+// $0.01/bbl) and ~46% of entries fire almost on top of the stop — so without a cap
+// the division explodes the contract count to absurd numbers and the equity curve
+// blows up. You can never hold more contracts than your equity can margin, so we cap
+// there. Tune this to your broker's actual spread margin.
+const MARGIN_PER_CONTRACT = 1500;
+
+// Risk-to-stop position size (contracts) sized off a FIXED capital basis (your
+// investment), capped by what that capital can actually margin.
+//
+// Two deliberate guards against the equity-curve blow-up:
+//   1. cap at basis / MARGIN_PER_CONTRACT — you can't hold more contracts than your
+//      money margins; this neutralises the near-zero-stop case (where risk/stop
+//      sizing would otherwise ask for an near-infinite position).
+//   2. size off the fixed `basis`, NOT the running equity — compounding off a
+//      ballooning equity is itself an exponential feedback loop on these high-PnL
+//      spread trades and runs away over thousands of trades. Fixed-basis sizing keeps
+//      the curve additive and readable while still honouring "size by investment & risk%".
+function sizedContracts(
+  entry: number,
+  stop: number | null | undefined,
+  basis: number,
+  riskPct: number,
+): number {
+  if (basis <= 0) return 0;
+  const perContractRisk = stop != null ? Math.abs(stop - entry) * CONTRACT_BBL : 0;
+  const riskSized = perContractRisk > 0 ? ((riskPct / 100) * basis) / perContractRisk : 0;
+  const maxAffordable = basis / MARGIN_PER_CONTRACT;   // can't hold more than capital margins
+  return Math.min(riskSized, maxAffordable);
+}
+
 const axisProps = {
   tick: { fill: '#475569', fontSize: 10 },
   axisLine: { stroke: '#1f2230' },
@@ -367,12 +400,10 @@ function PortfolioSummary({ data, investment, onInvestment, riskPct, onRiskPct }
       n += 1;
       if (t.win) wins += 1;
       const entry = t.entry_price ?? 0;
-      const stop = t.stop;
-      // fixed-fractional sizing: risk riskPct of current equity to the planned stop
-      const perContractRisk = stop != null ? Math.abs(stop - entry) * CONTRACT_BBL : 0;
-      const riskBudget = (riskPct / 100) * equity;
-      const contracts = perContractRisk > 0 ? riskBudget / perContractRisk : 0;
-      equity += (t.net_pnl ?? 0) * CONTRACT_BBL * contracts;   // compound off equity
+      // size off the fixed investment & risk%, capped at margin (see sizedContracts);
+      // equity below just accumulates realized PnL for the curve.
+      const contracts = sizedContracts(entry, t.stop, investment, riskPct);
+      equity += (t.net_pnl ?? 0) * CONTRACT_BBL * contracts;
     }
     const pnl = equity - investment;
     return { n, structs, winRate: n ? wins / n : null, equity, pnl,
@@ -385,7 +416,7 @@ function PortfolioSummary({ data, investment, onInvestment, riskPct, onRiskPct }
     <Card>
       <CardHeader
         title="Portfolio"
-        subtitle={`Aggregate across ${plan.structs} actioned structure${plan.structs === 1 ? '' : 's'} · fixed-% risk, compounding`}
+        subtitle={`Aggregate across ${plan.structs} actioned structure${plan.structs === 1 ? '' : 's'} · fixed-% risk on capital, size-capped`}
       />
       <div className="grid grid-cols-2 gap-4 p-4 sm:grid-cols-3 lg:grid-cols-5">
         <Metric label="Total Trades" value={String(plan.n)} />
@@ -459,9 +490,7 @@ function PortfolioEquityCurve({ data, investment, riskPct }:
     for (const t of trades) {
       if (equity <= 0) break;
       const entry = t.entry_price ?? 0;
-      const stop = t.stop;
-      const perContractRisk = stop != null ? Math.abs(stop - entry) * CONTRACT_BBL : 0;
-      const contracts = perContractRisk > 0 ? ((riskPct / 100) * equity) / perContractRisk : 0;
+      const contracts = sizedContracts(entry, t.stop, investment, riskPct);
       equity += (t.net_pnl ?? 0) * CONTRACT_BBL * contracts;
       pts.push({ t: hhmm(t.exit_ts), equity });
     }
@@ -470,7 +499,7 @@ function PortfolioEquityCurve({ data, investment, riskPct }:
 
   return (
     <Card className="flex h-[340px] flex-col">
-      <CardHeader title="Portfolio Equity Curve" subtitle="All instruments · fixed-% risk, compounding" />
+      <CardHeader title="Portfolio Equity Curve" subtitle="All instruments · fixed-% risk on capital, size-capped" />
       <div className="flex-1 p-2">
         {curve.length > 1 ? (
           <ResponsiveContainer width="100%" height="100%">
@@ -639,9 +668,7 @@ function sizeBacktest(trades: BacktestTrade[], investment: number, riskPct: numb
   for (const t of chrono) {
     if (equity <= 0) { ruined = true; pnlChrono.push(0); contractsChrono.push(0); continue; }
     const entry = t.entry_price ?? 0;
-    const stop = t.stop;
-    const perContractRisk = stop != null ? Math.abs(stop - entry) * CONTRACT_BBL : 0;
-    const contracts = perContractRisk > 0 ? ((riskPct / 100) * equity) / perContractRisk : 0;
+    const contracts = sizedContracts(entry, t.stop, investment, riskPct);
     const pnl = (t.net_pnl_pts ?? 0) * CONTRACT_BBL * contracts;
     maxContracts = Math.max(maxContracts, contracts);
     pnlChrono.push(pnl);
@@ -666,7 +693,7 @@ function sizeBacktest(trades: BacktestTrade[], investment: number, riskPct: numb
 function BacktestEquityCurve({ curve, start }: { curve: { t: string; equity: number }[]; start: number }) {
   return (
     <Card className="flex h-[360px] flex-col">
-      <CardHeader title="Backtest Equity Curve" subtitle="All instruments · fixed-% risk, compounding" />
+      <CardHeader title="Backtest Equity Curve" subtitle="All instruments · fixed-% risk on capital, size-capped" />
       <div className="flex-1 p-2">
         {curve.length > 1 ? (
           <ResponsiveContainer width="100%" height="100%">
@@ -711,10 +738,27 @@ function BacktestBreakdown({ bt }: { bt: BacktestResult }) {
             </div>
           </div>
         ))}
-        {bt.open_positions.length === 0 && (
+        {bt.open_positions.length === 0 ? (
           <div className="rounded border border-[#1f2230] bg-[#0e1016] p-3 text-center text-[11px] text-slate-500">
             Flat at end of history — no open positions
           </div>
+        ) : (
+          bt.open_positions.map((op) => (
+            <div key={op.key} className="rounded border border-amber-500/30 bg-amber-500/5 p-3 text-[11px]">
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-slate-200">{op.label}</span>
+                <span className={cn('mono font-semibold', op.direction === 'LONG' ? 'text-green-400' : 'text-red-400')}>
+                  {op.direction} · open
+                </span>
+              </div>
+              <div className="mt-1.5 grid grid-cols-2 gap-x-3 gap-y-1 text-slate-400">
+                <span>Entry <span className="mono text-slate-300">{op.entry_price?.toFixed(3)}</span></span>
+                <span>Target <span className="mono text-slate-300">{op.target?.toFixed(3)}</span></span>
+                <span>Stop <span className="mono text-slate-300">{op.stop?.toFixed(3)}</span></span>
+                <span className="col-span-2 text-slate-600">since {ymd(op.entry_ts)} · {op.regime ?? '?'}</span>
+              </div>
+            </div>
+          ))
         )}
       </div>
     </Card>
@@ -798,7 +842,7 @@ function BacktestView({ investment, onInvestment, riskPct, onRiskPct }:
       <Card>
         <CardHeader
           title="Backtest Summary"
-          subtitle={`Model engine (regime fair-value z) · entry |z| 1.0–2.0 · fixed-% risk, compounding · ${ymd(sm.first_bar ?? null)} → ${ymd(sm.last_bar ?? null)}`}
+          subtitle={`Model engine (regime fair-value z) · entry |z| 1.0–2.0 · fixed-% risk on capital, size-capped · ${ymd(sm.first_bar ?? null)} → ${ymd(sm.last_bar ?? null)}`}
         />
         <div className="grid grid-cols-2 gap-4 p-4 sm:grid-cols-3 lg:grid-cols-6">
           <Metric label="Total Trades" value={String(sm.n_trades)} />
@@ -836,7 +880,7 @@ function BacktestView({ investment, onInvestment, riskPct, onRiskPct }:
           <span>Final equity <span className="mono text-slate-200">{money(sized.final)}</span></span>
           <span>Peak position <span className="mono text-slate-200">{sized.maxContracts.toFixed(0)} contracts</span></span>
           {sized.ruined && <span className="font-semibold text-red-400">RUIN — equity hit 0; lower risk %</span>}
-          <span className="ml-auto text-slate-600">sizing risks {riskPct}% of equity to the stop per trade</span>
+          <span className="ml-auto text-slate-600">{riskPct}% of capital risked to the stop per trade, capped at ${MARGIN_PER_CONTRACT}/contract margin</span>
         </div>
       </Card>
 
