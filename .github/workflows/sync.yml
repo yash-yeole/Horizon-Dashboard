@@ -2,63 +2,49 @@ name: Sync to Hugging Face Spaces
 on:
   push:
     branches: [main]
-  workflow_dispatch:  # allow manual re-runs from the Actions tab
+  workflow_dispatch:  # allow manual runs from the Actions tab
 
 # Each HF Space is a Docker Space whose ROOT must hold its own Dockerfile + README
 # frontmatter, but ours live in subfolders. We mirror each subfolder to its Space
 # root with huggingface_hub's upload_folder (delete_patterns="*" clears stale files
-# first). This uses HfApi token auth — robust, unlike embedding creds in a git URL,
-# which failed with "Invalid username or password".
+# first). The target namespace + Space names are resolved from the token itself
+# (case-insensitive match) so a username-casing mismatch can't 404 us again.
 jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
       - name: Install huggingface_hub
-        run: pip install "huggingface_hub>=0.25"
+        run: python3 -m pip install --upgrade "huggingface_hub>=0.25"
 
-      - name: Verify HF token
+      - name: Deploy subfolders to their HF Spaces
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          python - <<'PY'
+          python3 - <<'PY'
           import os
           from huggingface_hub import HfApi
-          info = HfApi(token=os.environ["HF_TOKEN"]).whoami()
-          print("Authenticated as:", info.get("name"), "| type:", info.get("type"))
-          PY
+          api = HfApi(token=os.environ["HF_TOKEN"])
+          who = api.whoami()
+          user = who["name"]
+          print("Authenticated as:", user, "| type:", who.get("type"))
+          spaces = [s.id for s in api.list_spaces(author=user)]
+          print("Spaces under this account:", spaces)
 
-      - name: Deploy backend -> YashYeole/horizon-backend
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: |
-          python - <<'PY'
-          import os
-          from huggingface_hub import HfApi
-          HfApi(token=os.environ["HF_TOKEN"]).upload_folder(
-              repo_id="YashYeole/horizon-backend", repo_type="space",
-              folder_path="backend", delete_patterns="*",
-              commit_message="Deploy backend from GitHub Action",
-          )
-          print("backend synced")
-          PY
+          def resolve(suffix: str) -> str:
+              for s in spaces:
+                  if s.split("/")[-1].lower() == suffix.lower():
+                      return s
+              return f"{user}/{suffix}"  # fall back to a create-on-push target
 
-      - name: Deploy frontend -> YashYeole/horizon-frontend
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: |
-          python - <<'PY'
-          import os
-          from huggingface_hub import HfApi
-          HfApi(token=os.environ["HF_TOKEN"]).upload_folder(
-              repo_id="YashYeole/horizon-frontend", repo_type="space",
-              folder_path="energy-dashboard", delete_patterns="*",
-              commit_message="Deploy frontend from GitHub Action",
-          )
-          print("frontend synced")
+          for folder, suffix in [("backend", "horizon-backend"),
+                                 ("energy-dashboard", "horizon-frontend")]:
+              repo_id = resolve(suffix)
+              print(f"Deploying {folder}/ -> {repo_id} ...", flush=True)
+              api.upload_folder(
+                  repo_id=repo_id, repo_type="space", folder_path=folder,
+                  delete_patterns="*", commit_message="Deploy from GitHub Action",
+              )
+              print(f"  {repo_id} synced", flush=True)
           PY
