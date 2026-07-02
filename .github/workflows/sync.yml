@@ -2,36 +2,63 @@ name: Sync to Hugging Face Spaces
 on:
   push:
     branches: [main]
+  workflow_dispatch:  # allow manual re-runs from the Actions tab
 
-# Each HF Space is a Docker Space whose ROOT must hold its own Dockerfile +
-# README frontmatter. Our repo keeps them in subfolders (backend/, energy-dashboard/),
-# so we push each subfolder as the Space root via `git subtree split` + force-push
-# (a whole-repo push would put the Dockerfiles one level too deep and fail to build).
+# Each HF Space is a Docker Space whose ROOT must hold its own Dockerfile + README
+# frontmatter, but ours live in subfolders. We mirror each subfolder to its Space
+# root with huggingface_hub's upload_folder (delete_patterns="*" clears stale files
+# first). This uses HfApi token auth — robust, unlike embedding creds in a git URL,
+# which failed with "Invalid username or password".
 jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v5
         with:
-          fetch-depth: 0
+          python-version: '3.11'
 
-      - name: Configure git
-        run: |
-          git config user.email "actions@users.noreply.github.com"
-          git config user.name "github-actions"
+      - name: Install huggingface_hub
+        run: pip install "huggingface_hub>=0.25"
 
-      - name: Push backend/ -> horizon-backend Space
+      - name: Verify HF token
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          git subtree split --prefix=backend -b hf-backend
-          git push --force "https://YashYeole:$HF_TOKEN@huggingface.co/spaces/YashYeole/horizon-backend" hf-backend:main
-          git branch -D hf-backend
+          python - <<'PY'
+          import os
+          from huggingface_hub import HfApi
+          info = HfApi(token=os.environ["HF_TOKEN"]).whoami()
+          print("Authenticated as:", info.get("name"), "| type:", info.get("type"))
+          PY
 
-      - name: Push energy-dashboard/ -> horizon-frontend Space
+      - name: Deploy backend -> YashYeole/horizon-backend
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          git subtree split --prefix=energy-dashboard -b hf-frontend
-          git push --force "https://YashYeole:$HF_TOKEN@huggingface.co/spaces/YashYeole/horizon-frontend" hf-frontend:main
-          git branch -D hf-frontend
+          python - <<'PY'
+          import os
+          from huggingface_hub import HfApi
+          HfApi(token=os.environ["HF_TOKEN"]).upload_folder(
+              repo_id="YashYeole/horizon-backend", repo_type="space",
+              folder_path="backend", delete_patterns="*",
+              commit_message="Deploy backend from GitHub Action",
+          )
+          print("backend synced")
+          PY
+
+      - name: Deploy frontend -> YashYeole/horizon-frontend
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          python - <<'PY'
+          import os
+          from huggingface_hub import HfApi
+          HfApi(token=os.environ["HF_TOKEN"]).upload_folder(
+              repo_id="YashYeole/horizon-frontend", repo_type="space",
+              folder_path="energy-dashboard", delete_patterns="*",
+              commit_message="Deploy frontend from GitHub Action",
+          )
+          print("frontend synced")
+          PY
