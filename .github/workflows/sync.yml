@@ -6,9 +6,10 @@ on:
 
 # Each HF Space is a Docker Space whose ROOT must hold its own Dockerfile + README
 # frontmatter, but ours live in subfolders. We mirror each subfolder to its Space
-# root with huggingface_hub's upload_folder (delete_patterns="*" clears stale files
-# first). The target namespace + Space names are resolved from the token itself
-# (case-insensitive match) so a username-casing mismatch can't 404 us again.
+# root with huggingface_hub's upload_folder (delete_patterns="*" clears stale files).
+# NB the exact Space ids: backend is horizon_backend (UNDERSCORE), frontend is
+# horizon-frontend (hyphen). HF shows both as hyphens in the *.hf.space subdomain,
+# which is what caused the earlier 404s.
 jobs:
   sync:
     runs-on: ubuntu-latest
@@ -26,21 +27,12 @@ jobs:
           import os
           from huggingface_hub import HfApi
           api = HfApi(token=os.environ["HF_TOKEN"])
-          who = api.whoami()
-          user = who["name"]
-          print("Authenticated as:", user, "| type:", who.get("type"))
-          spaces = [s.id for s in api.list_spaces(author=user)]
-          print("Spaces under this account:", spaces)
-
-          def resolve(suffix: str) -> str:
-              for s in spaces:
-                  if s.split("/")[-1].lower() == suffix.lower():
-                      return s
-              return f"{user}/{suffix}"  # fall back to a create-on-push target
-
-          for folder, suffix in [("backend", "horizon-backend"),
-                                 ("energy-dashboard", "horizon-frontend")]:
-              repo_id = resolve(suffix)
+          print("Authenticated as:", api.whoami().get("name"), flush=True)
+          targets = [
+              ("backend", "YashYeole/horizon_backend"),        # underscore
+              ("energy-dashboard", "YashYeole/horizon-frontend"),  # hyphen
+          ]
+          for folder, repo_id in targets:
               print(f"Deploying {folder}/ -> {repo_id} ...", flush=True)
               api.upload_folder(
                   repo_id=repo_id, repo_type="space", folder_path=folder,
