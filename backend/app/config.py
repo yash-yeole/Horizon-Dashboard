@@ -2,8 +2,6 @@ from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-# Resolved from this file's location: config.py -> app -> backend -> repo root.
-_PROJECT_ROOT = Path(__file__).resolve().parents[2]
 _CURVES_DIR = Path(__file__).resolve().parents[1] / "curves"
 
 
@@ -95,7 +93,7 @@ class Settings(BaseSettings):
     # Paper-trading / strategy engine (Phase 7). The engine is vendored into
     # backend/strategy; it reads the precomputed daily fair-value parquet cache
     # (refreshed offline by refresh_fairvalue.py) and the live 15-min bar DB.
-    paper_strategy_dir: str = str(_PROJECT_ROOT / "backend" / "strategy")
+    paper_strategy_dir: str = str(Path(__file__).resolve().parents[1] / "strategy")
     paper_cache_ttl: float = 15.0
     # Unified |z| thresholds (live engine == backtest). STOP widened to 2.5 to give
     # adverse room so normal intraday oscillation around the daily anchor doesn't
