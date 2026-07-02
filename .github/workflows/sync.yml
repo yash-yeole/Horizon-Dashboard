@@ -1,0 +1,20 @@
+name: Sync to Hugging Face
+on:
+  push:
+    branches: [main]
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Push to HF
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          # Sync Frontend
+          git push https://YashYeole:$HF_TOKEN@huggingface.co/spaces/YashYeole/horizon-frontend main --force
+          # Sync Backend
+          git push https://YashYeole:$HF_TOKEN@huggingface.co/spaces/YashYeole/horizon-backend main --force

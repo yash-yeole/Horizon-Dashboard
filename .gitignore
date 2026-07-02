@@ -54,8 +54,15 @@ Thumbs.db
 /Regime/model/__pycache__/
 /Regime/model/cache/__pycache__/
 
-# ── Local research tooling (not part of the app) ─────────
+# ── Local research / analysis tooling & snapshots (not part of the app) ─
 # research/ = inventory-impact (was rough_work) + spread-models (was analysis).
-# Local analysis IP; the production versions live in backend/app. Kept out of the
-# repo like the old /analysis/ rule. Flip to committed by removing this line.
+# Local analysis IP; the production versions live in backend/app.
 /research/
+/analysis/
+/_snapshots/
+*.pptx
+*.parquet
+*.db
+Regime/model/cache/
+backend/strategy/cache/
+backend/strategy/files/

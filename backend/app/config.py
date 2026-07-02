@@ -95,7 +95,7 @@ class Settings(BaseSettings):
     # Paper-trading / strategy engine (Phase 7). The engine is vendored into
     # backend/strategy; it reads the precomputed daily fair-value parquet cache
     # (refreshed offline by refresh_fairvalue.py) and the live 15-min bar DB.
-    paper_strategy_dir: str = str(Path(__file__).resolve().parent.parent / "strategy")
+    paper_strategy_dir: str = str(_PROJECT_ROOT / "backend" / "strategy")
     paper_cache_ttl: float = 15.0
     # Unified |z| thresholds (live engine == backtest). STOP widened to 2.5 to give
     # adverse room so normal intraday oscillation around the daily anchor doesn't
