@@ -22,6 +22,7 @@ import sys
 import time
 import json
 import warnings
+from typing import Literal, cast
 
 import numpy as np
 import pandas as pd
@@ -47,6 +48,7 @@ DATA_DIR = os.environ.get(
 import fair_value as fv                                   # noqa: E402
 from strategy import (CalendarMeanReversion, RollingMeanReversion,  # noqa: E402
                       DayContext)
+import data_feed as feed                                  # noqa: E402
 from backtest import Engine, EngineConfig                 # noqa: E402
 from app.config import settings                            # noqa: E402
 
@@ -118,7 +120,7 @@ def _day_map(product: str) -> pd.DataFrame:
     return dm
 
 
-def _make_strategy(engine: str):
+def _make_strategy(engine: Literal["model", "rolling"]) -> CalendarMeanReversion | RollingMeanReversion:
     """Pick the decision engine for a structure, matching the LIVE simulator."""
     if engine == "rolling":
         # identical params to the live rolling engine (app/config.py)
@@ -158,7 +160,7 @@ def run_product(key: str) -> dict:
     )
     inst, struct = cfg_meta["instrument"], cfg_meta["structure"]
     for ts, spread in bars.items():
-        eng.step(_Bar(ts, float(spread), inst, struct))
+        eng.step(cast(feed.Bar, _Bar(ts, float(spread), inst, struct)))
 
     tr = eng.trades.frame()
     n = len(tr)

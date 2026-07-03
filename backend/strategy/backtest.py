@@ -16,7 +16,7 @@ import pandas as pd
 
 import data_feed as feed
 import fair_value as fv
-from strategy import CalendarMeanReversion, DayContext
+from strategy import CalendarMeanReversion, RollingMeanReversion, DayContext
 from trade_log import SignalLog, TradeLog, OpenTrade
 import metrics
 
@@ -37,7 +37,7 @@ class Engine:
     """Stateful engine usable for both backtest (iterate) and live (step per bar)."""
 
     def __init__(self, cfg: EngineConfig | None = None,
-                 strategy: CalendarMeanReversion | None = None,
+                 strategy: CalendarMeanReversion | RollingMeanReversion | None = None,
                  day_map: pd.DataFrame | None = None):
         self.cfg = cfg or EngineConfig()
         self.strat = strategy or CalendarMeanReversion()
@@ -119,7 +119,7 @@ class Engine:
 
 
 def run_backtest(cfg: EngineConfig | None = None,
-                 strategy: CalendarMeanReversion | None = None) -> dict:
+                 strategy: CalendarMeanReversion | RollingMeanReversion | None = None) -> dict:
     return Engine(cfg, strategy).run()
 
 
