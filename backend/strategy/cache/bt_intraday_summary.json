@@ -1,0 +1,74 @@
+{
+  "generated_at": "2026-06-18T07:55:59.005004+00:00",
+  "structures": {
+    "wti_cal": {
+      "label": "WTI C1-C2",
+      "engine": "model",
+      "n_trades": 305,
+      "wins": 253,
+      "net_pts": 100.9000431764195,
+      "first_bar": "2021-01-04 01:00:00",
+      "last_bar": "2026-05-22 14:45:00",
+      "open_position": null,
+      "parquet": "bt_intraday_wti_cal.parquet"
+    },
+    "brent_cal": {
+      "label": "Brent C1-C2",
+      "engine": "model",
+      "n_trades": 239,
+      "wins": 194,
+      "net_pts": 59.70018506235403,
+      "first_bar": "2021-01-04 01:00:00",
+      "last_bar": "2026-05-22 09:45:00",
+      "open_position": null,
+      "parquet": "bt_intraday_brent_cal.parquet"
+    },
+    "wti_c2c3": {
+      "label": "WTI C2-C3",
+      "engine": "rolling",
+      "n_trades": 5298,
+      "wins": 4048,
+      "net_pts": 263.98797272556203,
+      "first_bar": "2021-01-04 01:00:00",
+      "last_bar": "2026-05-22 14:45:00",
+      "open_position": {
+        "direction": "LONG",
+        "entry_ts": "2026-05-22 13:45:00",
+        "entry_price": 3.651666666666685,
+        "target": 3.7386001082251044,
+        "stop": 3.6167832269439377,
+        "regime": "M|H|Back"
+      },
+      "parquet": "bt_intraday_wti_c2c3.parquet"
+    },
+    "brent_c2c3": {
+      "label": "Brent C2-C3",
+      "engine": "rolling",
+      "n_trades": 4724,
+      "wins": 3444,
+      "net_pts": 18.699232179358987,
+      "first_bar": "2021-01-04 01:00:00",
+      "last_bar": "2026-05-22 09:45:00",
+      "open_position": {
+        "direction": "LONG",
+        "entry_ts": "2026-05-22 08:30:00",
+        "entry_price": 3.684857142857112,
+        "target": 3.8021538270756983,
+        "stop": 3.6540003058091406,
+        "regime": "M|H|Back"
+      },
+      "parquet": "bt_intraday_brent_c2c3.parquet"
+    },
+    "wti_brent": {
+      "label": "WTI-Brent",
+      "engine": "rolling",
+      "n_trades": 4566,
+      "wins": 3027,
+      "net_pts": 503.1756818093039,
+      "first_bar": "2021-01-04 01:00:00",
+      "last_bar": "2026-05-22 09:45:00",
+      "open_position": null,
+      "parquet": "bt_intraday_wti_brent.parquet"
+    }
+  }
+}
